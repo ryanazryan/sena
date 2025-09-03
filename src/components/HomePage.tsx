@@ -218,7 +218,7 @@ export function HomePage({ onSectionChange, userRole }: HomePageProps) {
           <Button variant="secondary" size="lg" onClick={() => onSectionChange('library')}>
             {userRole === 'teacher' ? 'Kelola Library' : 'Jelajahi Library Digital'}
           </Button>
-          <Button variant="outline" size="lg" className="border-white text-white hover:bg-white hover:text-primary" 
+          <Button variant="outline" size="lg" className="border-white hover:bg-gray-200 hover:text-primary" 
                   onClick={() => onSectionChange('games')}>
             {userRole === 'teacher' ? 'Kelola Games' : 'Main SENA Games'}
           </Button>
