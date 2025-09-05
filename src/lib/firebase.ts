@@ -1,11 +1,8 @@
-// src/lib/firebase.ts
-
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
-// Your web app's Firebase configuration, read from environment variables
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -16,10 +13,8 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-// Initialize Firebase only once
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
-// Export the services you'll need
 export const auth = getAuth(app);
 export const db = getFirestore(app);
 export const storage = getStorage(app);
