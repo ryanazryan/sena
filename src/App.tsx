@@ -59,7 +59,7 @@ export default function App() {
       case "library":
         return <DigitalLibrary userRole={userRole} />;
       case "games":
-        return <GamesSection userRole={userRole} />;
+        return <GamesSection userRole={userRole} user={user} />;
       case "coaching":
         return <CoachingSection userRole={userRole} />;
       default:

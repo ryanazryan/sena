@@ -1,7 +1,7 @@
 import type { NextApiRequest, NextApiResponse } from "next";
-import { db } from "../lib/firebase";
 import { collection, addDoc } from "firebase/firestore";
 import { GoogleGenAI } from "@google/genai"; 
+import { db } from "../src/lib/firebase";
 
 const genAI = new GoogleGenAI({
   apiKey: process.env.GEMINI_API_KEY,

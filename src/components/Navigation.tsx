@@ -34,9 +34,9 @@ interface NavigationProps {
 export function Navigation({ activeSection, onSectionChange, onLogout, userProfile }: NavigationProps) {
   const menuItems = [
     { id: 'home', label: 'Beranda', icon: Home },
-    { id: 'library', label: 'Library Digital', icon: BookOpen },
+    // { id: 'library', label: 'Library Digital', icon: BookOpen },
     { id: 'games', label: 'Games', icon: Gamepad2 },
-    { id: 'coaching', label: 'Coaching Clinic', icon: GraduationCap }
+    // { id: 'coaching', label: 'Coaching Clinic', icon: GraduationCap }
   ];
 
   const userRole = userProfile?.peran;
