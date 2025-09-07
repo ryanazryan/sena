@@ -24,10 +24,10 @@ export function Footer({ onSectionChange, userRole }: FooterProps) {
   const currentYear = new Date().getFullYear();
 
   const navigationLinks = [
-    { id: 'home', label: 'Beranda', icon: Home },
-    { id: 'library', label: 'Library Digital', icon: BookOpen },
-    { id: 'games', label: 'SENA Games', icon: Gamepad2 },
-    { id: 'coaching', label: 'Coaching Clinic', icon: GraduationCap }
+    { id: 'home', label: 'Dashboard', icon: Home },
+    // { id: 'library', label: 'Library Digital', icon: BookOpen },
+    { id: 'games', label: 'Games', icon: Gamepad2 },
+    // { id: 'coaching', label: 'Coaching Clinic', icon: GraduationCap }
   ];
 
   const contactInfo = [

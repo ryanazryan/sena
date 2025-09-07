@@ -1,8 +1,4 @@
-// src/components/Navigation.tsx
-
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
-import { 
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -10,33 +6,24 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { 
-  BookOpen, 
-  Gamepad2, 
-  GraduationCap, 
-  Home, 
-  User, 
-  LogOut, 
-  Settings,
-  UserCheck,
-  Users
-} from "lucide-react";
+import { LogOut, User, UserCheck, Settings, Users, BookOpen, Gamepad2, GraduationCap, Home } from "lucide-react";
 import { UserProfile } from "../lib/auth";
+import { Badge } from "./ui/badge";
 
 interface NavigationProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
-  onLogout?: () => void;
+  onLogout: () => void;
   userProfile: UserProfile | null;
 }
 
 export function Navigation({ activeSection, onSectionChange, onLogout, userProfile }: NavigationProps) {
   const menuItems = [
-    { id: 'home', label: 'Beranda', icon: Home },
-    // { id: 'library', label: 'Library Digital', icon: BookOpen },
-    { id: 'games', label: 'Games', icon: Gamepad2 },
-    // { id: 'coaching', label: 'Coaching Clinic', icon: GraduationCap }
+    { id: 'home', label: 'Dasbor', icon: Home },
+    { id: 'games', label: 'Permainan', icon: Gamepad2 },
+    { id: 'aboutus', label: 'Tentang Kami', icon: BookOpen },
   ];
 
   const userRole = userProfile?.peran;
@@ -52,6 +39,11 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-3">
+            <img 
+              src="/sena_logo.png" 
+              alt="SENA Logo" 
+              className="w-8 h-8"
+            />
             <div>
               <h1 className="text-xl font-semibold text-foreground">SENA</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">Self-Learning Education for New Adventure</p>
@@ -65,6 +57,7 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
           </div>
           
           <div className="flex items-center space-x-4">
+            {/* Navigation Menu (Hidden on mobile) */}
             <div className="hidden md:flex space-x-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
@@ -122,7 +115,7 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
                   </>
                 )}
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onLogout}>
+                <DropdownMenuItem onClick={onLogout} className="cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Keluar</span>
                 </DropdownMenuItem>
