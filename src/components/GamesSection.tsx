@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { useState, useEffect, useCallback } from "react"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -47,7 +48,7 @@ import {
 } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 
-import { db, storage } from "../lib/firebase"; 
+import { db } from "../lib/firebase"; 
 import { 
     collection, 
     query, 
@@ -59,7 +60,6 @@ import {
     orderBy,
     Timestamp 
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { User as FirebaseUser } from "firebase/auth";
 import { Label } from "./ui/label";
 
@@ -189,7 +189,7 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
 
   const stats = getStatsForRole();
 
-  // --- KOMPONEN FORM SUBMIT SISWA (MENGGUNAKAN FIREBASE SDK LANGSUNG) ---
+  // --- KOMPONEN FORM SUBMIT SISWA (MENGGUNAKAN CLOUDINARY) ---
   const SubmitScoreForm = () => {
     const [game, setGame] = useState("Literasi Adventure");
     const [score, setScore] = useState("");
@@ -225,12 +225,24 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
       setSuccessMessage(null);
 
       try {
-        // 1. Upload file ke Storage
-        const storageRef = ref(storage, `game-screenshots/${user.uid}/${Date.now()}_${file.name}`);
-        const uploadResult = await uploadBytes(storageRef, file);
-        const screenshotUrl = await getDownloadURL(uploadResult.ref);
+        // UPLOAD FILE KE CLOUDINARY
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string);
+        
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/upload`, {
+          method: "POST",
+          body: formData,
+        });
 
-        // 2. Simpan data langsung ke Firestore (menggantikan pemanggilan API submit-score)
+        if (!res.ok) {
+          throw new Error("Gagal mengunggah gambar ke Cloudinary.");
+        }
+
+        const data = await res.json();
+        const screenshotUrl = data.secure_url;
+        
+        // Simpan data ke Firestore dengan URL Cloudinary
         await addDoc(collection(db, "gameSubmissions"), {
           game: game,
           score: parseInt(score),
@@ -239,8 +251,8 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
           screenshotUrl: screenshotUrl,
           userId: user.uid,
           studentName: user.displayName || user.email || "Siswa Sena",
-          status: "pending", // STATUS WAJIB PENDING
-          createdAt: Timestamp.now() // Gunakan Timestamp server
+          status: "pending", 
+          createdAt: Timestamp.now()
         });
         
         setSuccessMessage("Kiriman Anda berhasil disimpan dan sedang menunggu review dari Guru.");
@@ -248,7 +260,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
         setTimeout(() => {
            setShowSubmitForm(false);
            setSuccessMessage(null);
-           // Data akan refresh otomatis karena listener onSnapshot
         }, 4000);
 
       } catch (err: any) {
@@ -329,8 +340,8 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
       setApprovalError(null);
 
       try {
-          // 1. Panggil API feedback.ts Anda (API ini memanggil Gemini)
-          const res = await fetch('/api/feedback', { // Pastikan API ini ada di /api/feedback
+          // Panggil server backend baru di port 3001
+          const res = await fetch('http://localhost:3001/feedback', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -344,11 +355,13 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Gagal mendapat feedback AI.");
 
-          // 2. Update dokumen di Firestore setelah dapat feedback AI
+          const cleanedFeedback = data.feedback.replace(/\*\*/g, '');
+
+          // Update dokumen di Firestore setelah dapat feedback AI dari server
           const docRef = doc(db, "gameSubmissions", reviewingSubmission.id);
           await updateDoc(docRef, {
               status: "graded", 
-              feedback: data.feedback, // KOREKSI: Menyimpan feedback AI ke bidang 'feedback'
+              feedback: cleanedFeedback, 
               teacherNote: teacherFeedback, 
               score: teacherScore, 
               rank: teacherScore >= 900 ? 'A+' : (teacherScore >= 800 ? 'A' : 'B+')
@@ -546,7 +559,7 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                       </div>
                     </div>
                     
-                    {/* KOREKSI: Tampilkan feedback HANYA jika ada (baik itu feedback AI atau feedback/alasan penolakan dari guru) */}
+                    {/* Tampilkan feedback HANYA jika ada (baik itu feedback AI atau feedback/alasan penolakan dari guru) */}
                     {sub.feedback && (
                         <div className="mb-4 p-3 bg-muted rounded-lg border">
                            <p className="text-xs font-medium mb-1">
@@ -582,42 +595,55 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
 
         {/* Tab Rekomendasi (Statis) */}
         <TabsContent value="recommendations" className="mt-6">
-           <div className="space-y-6">
-            <div>
-              <h2 className="text-xl font-semibold mb-4">Rekomendasi Personal</h2>
-              <p className="text-muted-foreground mb-6">Berdasarkan aktivitas dan performa Anda, berikut rekomendasi untuk meningkatkan kemampuan literasi.</p>
-            </div>
-            <div className="grid gap-4">
-              {recommendations.map((rec, index) => (
-                <Card key={index} className="hover:shadow-md transition-shadow">
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <CardTitle className="flex items-center">
-                          {rec.type === 'game' && <Gamepad2 className="w-5 h-5 mr-2 text-blue-600" />}
-                          {rec.type === 'book' && <BookOpen className="w-5 h-5 mr-2 text-green-600" />}
-                          {rec.type === 'activity' && <GraduationCap className="w-5 h-5 mr-2 text-purple-600" />}
-                          {rec.title}
-                        </CardTitle>
-                        <CardDescription className="mt-2">{rec.description}</CardDescription>
+           <Card className="mb-6 border-2 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
+             <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center"><PlayCircle className="w-6 h-6 mr-3 text-primary" /> SENA Games Collection</div>
+                <Badge className="bg-primary">Terbaru</Badge>
+              </CardTitle>
+              <CardDescription>Kumpulan game edukatif terlengkap untuk pembelajaran literasi interaktif</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="text-sm text-muted-foreground">
+                      <div className="flex items-center mb-1"><Users className="w-4 h-4 mr-1" /> 2,790+ pemain aktif</div>
+                      <div className="flex items-center"><Star className="w-4 h-4 mr-1 text-yellow-500" /> 4.8/5 rating</div>
+                    </div>
+                  </div>
+                  <Button size="lg" className="bg-primary hover:bg-primary/90" onClick={() => window.open('https://s.id/senagames', '_blank')}>
+                    <ExternalLink className="w-4 h-4 mr-2" /> Main Sekarang
+                  </Button>
+                </div>
+                <div className="border-t pt-4">
+                  <div className="flex items-center mb-3"><FileText className="w-5 h-5 mr-2 text-primary" /> <h3 className="font-semibold">Buku Panduan PDF</h3></div>
+                  <p className="text-sm text-muted-foreground mb-4">Download panduan lengkap untuk memaksimalkan pengalaman bermain game.</p>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    {guideBooks.map(book => (
+                      <div key={book.id} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex-1">
+                            <h4 className="font-medium text-sm leading-tight">{book.title}</h4>
+                            <p className="text-xs text-muted-foreground mt-1">{book.description}</p>
+                          </div>
+                          <Badge variant="outline" className="text-xs ml-2 shrink-0">{book.category}</Badge>
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                          <span>{book.pages} hal</span>
+                          <span>{book.size}</span>
+                        </div>
+                        <div className="flex gap-1">
+                          <Button size="sm" className="flex-1 h-7 text-xs"><Download className="w-3 h-3 mr-1" /> Download</Button>
+                          <Button size="sm" variant="outline" className="h-7 px-2"><Eye className="w-3 h-3" /></Button>
+                        </div>
                       </div>
-                      <Badge variant="outline">{rec.type === 'game' ? 'Game' : rec.type === 'book' ? 'Buku' : 'Aktivitas'}</Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {rec.difficulty && (<div className="flex items-center text-sm"><Target className="w-4 h-4 mr-2" /> <span className="font-medium">Tingkat:</span><Badge variant="outline" className="ml-2">{rec.difficulty}</Badge></div>)}
-                      {rec.estimatedTime && (<div className="flex items-center text-sm text-muted-foreground"><Clock className="w-4 h-4 mr-2" /> Estimasi waktu: {rec.estimatedTime}</div>)}
-                      {rec.duration && (<div className="flex items-center text-sm text-muted-foreground"><Clock className="w-4 h-4 mr-2" /> Durasi: {rec.duration}</div>)}
-                      {rec.category && (<div className="flex items-center text-sm text-muted-foreground"><BookOpen className="w-4 h-4 mr-2" /> Kategori: {rec.category}</div>)}
-                      <div className="p-3 bg-muted rounded-lg"><div className="text-xs font-medium mb-1">Alasan Rekomendasi:</div><div className="text-xs text-muted-foreground">{rec.reason}</div></div>
-                      <Button className="w-full"><Eye className="w-4 h-4 mr-2" /> {rec.type === 'game' ? 'Main Game' : rec.type === 'book' ? 'Baca Buku' : 'Ikuti Aktivitas'}</Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
       
@@ -665,7 +691,7 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                                       onChange={(e) => setTeacherScore(parseInt(e.target.value))}
                                       max="1000" 
                                       min="0"
-                                      readOnly={userRole !== 'teacher' || reviewingSubmission.status === 'graded'} // Kunci jika sudah dinilai AI
+                                      readOnly={userRole !== 'teacher'} 
                                   />
                                 </div>
                                 <div className="space-y-2">
@@ -675,11 +701,11 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                                       className="min-h-[120px]"
                                       value={teacherFeedback}
                                       onChange={(e) => setTeacherFeedback(e.target.value)}
-                                      readOnly={userRole !== 'teacher' || reviewingSubmission.status === 'graded'} // Kunci jika sudah dinilai AI
+                                      readOnly={userRole !== 'teacher'} 
                                   />
                                 </div>
 
-                                {/* KOREKSI: Tampilkan Feedback AI (hanya dari bidang 'feedback') JIKA status = graded */}
+                                {/* Tampilkan Feedback AI (hanya dari bidang 'feedback') JIKA status = graded */}
                                 {reviewingSubmission.status === 'graded' && reviewingSubmission.feedback && (
                                      <div className="space-y-2">
                                        <Label className="flex items-center"><Brain className="w-4 h-4 mr-2 text-primary" /> Feedback AI (Final)</Label>
@@ -688,7 +714,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                                        </div>
                                      </div>
                                 )}
-                                {/* Tampilkan feedback manual (penolakan) JIKA status = rejected */}
                                 {reviewingSubmission.status === 'rejected' && reviewingSubmission.feedback && (
                                      <div className="space-y-2">
                                        <Label className="flex items-center text-destructive"><X className="w-4 h-4 mr-2" /> Alasan Penolakan</Label>
@@ -702,7 +727,7 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
 
                       {approvalError && (<div className="text-sm text-destructive flex items-center gap-2 mb-2"><AlertCircle className="w-4 h-4" /> {approvalError}</div>)}
 
-                      {userRole === 'teacher' && reviewingSubmission.status !== 'graded' ? (
+                      {userRole === 'teacher' && (
                           <DialogFooter className="pt-4 border-t">
                               <Button 
                                   variant="destructive" 
@@ -717,16 +742,15 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                                   className="bg-green-600 hover:bg-green-700"
                               >
                                   {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
-                                  Setujui & Hasilkan Feedback AI
+                                  {reviewingSubmission.status === 'graded' ? 'Perbarui Feedback AI' : 'Setujui & Hasilkan Feedback AI'}
                               </Button>
                           </DialogFooter>
-                      ) : (
-                         <DialogFooter className="pt-4 border-t">
-                            <DialogClose asChild>
-                              <Button variant="outline">Tutup</Button>
-                            </DialogClose>
-                         </DialogFooter>
                       )}
+                      <DialogFooter className={userRole === 'teacher' ? 'hidden' : 'pt-4 border-t'}>
+                          <DialogClose asChild>
+                              <Button variant="outline">Tutup</Button>
+                          </DialogClose>
+                      </DialogFooter>
                   </>
               )}
           </DialogContent>
