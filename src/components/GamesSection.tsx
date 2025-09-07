@@ -242,11 +242,10 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
         const data = await res.json();
         const screenshotUrl = data.secure_url;
         
-        // Simpan data ke Firestore dengan URL Cloudinary
         await addDoc(collection(db, "gameSubmissions"), {
           game: game,
           score: parseInt(score),
-          maxScore: 1000, 
+          maxScore: 100, 
           note: note,
           screenshotUrl: screenshotUrl,
           userId: user.uid,
@@ -302,7 +301,7 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
               </div>
               <div>
                 <Label htmlFor="score-input">Skor Anda</Label>
-                <Input id="score-input" placeholder="0-1000" type="number" max="1000" min="0" value={score} onChange={(e) => setScore(e.target.value)} required className="mt-1" />
+                <Input id="score-input" placeholder="0-100" type="number" max="100" min="0" value={score} onChange={(e) => setScore(e.target.value)} required className="mt-1" />
               </div>
             </div>
             <div>
@@ -689,7 +688,7 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                                       type="number" 
                                       value={teacherScore}
                                       onChange={(e) => setTeacherScore(parseInt(e.target.value))}
-                                      max="1000" 
+                                      max="100" 
                                       min="0"
                                       readOnly={userRole !== 'teacher'} 
                                   />
