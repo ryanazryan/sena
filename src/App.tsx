@@ -50,24 +50,31 @@ export default function App() {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setIsLoading(true);
       setUser(currentUser);
+
       if (currentUser) {
-        const firestoreProfile = await getUserProfile(currentUser.uid);
-        if (firestoreProfile) {
-          setUserProfile(firestoreProfile);
-        } else {
-          console.warn("Profil Firestore tidak ditemukan, membuat profil sementara dari data Auth.");
-          setUserProfile({
-            uid: currentUser.uid,
-            namaLengkap: currentUser.displayName || "Pengguna Baru",
-            email: currentUser.email!,
-            peran: 'student', 
-          });
-        }
+        // Menggunakan onSnapshot untuk mendengarkan perubahan dokumen secara real-time
+        // Ini lebih handal karena akan terpicu ketika dokumen profil dibuat.
+        const profileQuery = query(collection(db, "users"), where("uid", "==", currentUser.uid));
+        
+        const unsubscribeProfile = onSnapshot(profileQuery, (querySnapshot) => {
+          if (!querySnapshot.empty) {
+            const profileData = querySnapshot.docs[0].data() as UserProfile;
+            setUserProfile(profileData);
+            setIsLoading(false); // Mengatur loading ke false hanya ketika profil ditemukan
+          } else {
+            // Biarkan isLoading tetap true jika profil belum ditemukan
+            setUserProfile(null);
+          }
+        });
+        
+        return () => unsubscribeProfile();
+        
       } else {
         setUserProfile(null);
+        setIsLoading(false); // Mengatur loading ke false jika tidak ada user login
       }
-      setIsLoading(false);
     });
     return () => unsubscribe();
   }, []);
@@ -107,7 +114,6 @@ export default function App() {
   const renderContent = () => {
     const userRole = userProfile?.peran;
     
-    // Perbaikan: Tambahkan guard clause untuk userProfile
     if (user && !userProfile) {
       return (
         <div className="flex items-center justify-center h-full">
@@ -161,10 +167,10 @@ export default function App() {
       />
     ) : (
       <RegisterPage
-        onBack={() => {}}
-        onRegister={handleAuthSuccess}
-        onShowLogin={() => setShowLogin(true)}
-      />
+          onRegister={handleAuthSuccess}
+          onShowLogin={() => setShowLogin(true)} onBack={function (): void {
+            throw new Error("Function not implemented.");
+          } }      />
     );
   }
 

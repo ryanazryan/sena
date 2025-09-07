@@ -1,4 +1,3 @@
-/// <reference types="vite/client" />
 import { useState, useEffect, useCallback } from "react"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -67,7 +66,8 @@ import { UserProfile } from "../lib/auth"; // Impor UserProfile
 interface GamesSectionProps {
   userRole?: 'student' | 'teacher' | null;
   user: FirebaseUser | null; 
-  userProfile: UserProfile | null; // Tambahkan prop ini
+  // Perbaikan: Tambahkan properti userProfile
+  userProfile: UserProfile | null; 
 }
 
 export type ScoreEntry = {
@@ -107,9 +107,9 @@ export function GamesSection({ userRole, user, userProfile }: GamesSectionProps)
 
     const submissionsCol = collection(db, "gameSubmissions"); 
 
-    if (userRole === 'teacher' && userProfile.kodeKelas) {
+    if (userRole === 'teacher' && userProfile) {
       // Guru melihat semua kiriman dari siswa di kelasnya
-      q = query(submissionsCol, where("kodeKelas", "==", userProfile.kodeKelas), orderBy("createdAt", "desc"));
+      q = query(submissionsCol, where("kodeKelas", "==", userProfile), orderBy("createdAt", "desc"));
     } else if (userRole === 'student') {
       // Siswa hanya melihat kirimannya sendiri
       q = query(
