@@ -25,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const response = await genAI.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `Seorang siswa memainkan game "${game}" dan mendapat skor ${score}/1000.\nCatatan siswa: ${note || "Tidak ada catatan"}.\nBerikan feedback singkat yang memotivasi dan edukatif.`,
+      contents: `Seorang siswa memainkan game "${game}" dan mendapat skor ${score}/100.\nCatatan siswa: ${note || "Tidak ada catatan"}.\nBerikan feedback singkat yang memotivasi dan edukatif.`,
     });
 
     const feedback = response.text; 
