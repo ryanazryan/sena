@@ -446,7 +446,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
           <TabsTrigger value="recommendations">Rekomendasi</TabsTrigger>
         </TabsList>
 
-        {/* Tab Games (Statis) */}
         <TabsContent value="games" className="mt-6">
            <Card className="mb-6 border-2 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
              <CardHeader>
