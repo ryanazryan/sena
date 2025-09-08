@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { useState, useEffect, useCallback } from "react"; 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
@@ -61,13 +62,10 @@ import {
 } from "firebase/firestore";
 import { User as FirebaseUser } from "firebase/auth";
 import { Label } from "./ui/label";
-import { UserProfile } from "../lib/auth"; // Impor UserProfile
 
 interface GamesSectionProps {
   userRole?: 'student' | 'teacher' | null;
   user: FirebaseUser | null; 
-  // Perbaikan: Tambahkan properti userProfile
-  userProfile: UserProfile | null; 
 }
 
 export type ScoreEntry = {
@@ -88,40 +86,34 @@ export type ScoreEntry = {
   achievements?: string[];
 };
 
-export function GamesSection({ userRole, user, userProfile }: GamesSectionProps) {
+export function GamesSection({ userRole, user }: GamesSectionProps) {
   const [showSubmitForm, setShowSubmitForm] = useState(false);
+  
   const [submissions, setSubmissions] = useState<ScoreEntry[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
+
   const [reviewingSubmission, setReviewingSubmission] = useState<ScoreEntry | null>(null);
   const [teacherScore, setTeacherScore] = useState(0);
   const [teacherFeedback, setTeacherFeedback] = useState("");
   const [isApproving, setIsApproving] = useState(false);
   const [approvalError, setApprovalError] = useState<string | null>(null);
 
-  // --- MENGAMBIL DATA REAL-TIME DARI FIRESTORE BERDASARKAN PERAN ---
   useEffect(() => {
-    if (!user || !userProfile) return; 
+    if (!user) return; 
 
     setIsLoadingData(true);
     let q; 
 
     const submissionsCol = collection(db, "gameSubmissions"); 
 
-    if (userRole === 'teacher' && userProfile) {
-      // Guru melihat semua kiriman dari siswa di kelasnya
-      q = query(submissionsCol, where("kodeKelas", "==", userProfile), orderBy("createdAt", "desc"));
-    } else if (userRole === 'student') {
-      // Siswa hanya melihat kirimannya sendiri
+    if (userRole === 'teacher') {
+      q = query(submissionsCol, orderBy("createdAt", "desc"));
+    } else {
       q = query(
           submissionsCol, 
           where("userId", "==", user.uid),
           orderBy("createdAt", "desc")
       );
-    } else {
-      // Jika tidak ada kode kelas atau peran tidak jelas, jangan ambil data
-      setSubmissions([]);
-      setIsLoadingData(false);
-      return;
     }
 
     const unsubscribe = onSnapshot(q, (querySnapshot) => {
@@ -138,7 +130,7 @@ export function GamesSection({ userRole, user, userProfile }: GamesSectionProps)
 
     return () => unsubscribe();
 
-  }, [user, userRole, userProfile]); 
+  }, [user, userRole]); 
 
 
   const recommendations = [
@@ -253,7 +245,7 @@ export function GamesSection({ userRole, user, userProfile }: GamesSectionProps)
         await addDoc(collection(db, "gameSubmissions"), {
           game: game,
           score: parseInt(score),
-          maxScore: 1000, 
+          maxScore: 100, 
           note: note,
           screenshotUrl: screenshotUrl,
           userId: user.uid,
@@ -309,7 +301,7 @@ export function GamesSection({ userRole, user, userProfile }: GamesSectionProps)
               </div>
               <div>
                 <Label htmlFor="score-input">Skor Anda</Label>
-                <Input id="score-input" placeholder="0-1000" type="number" max="1000" min="0" value={score} onChange={(e) => setScore(e.target.value)} required className="mt-1" />
+                <Input id="score-input" placeholder="0-100" type="number" max="100" min="0" value={score} onChange={(e) => setScore(e.target.value)} required className="mt-1" />
               </div>
             </div>
             <div>
@@ -362,11 +354,13 @@ export function GamesSection({ userRole, user, userProfile }: GamesSectionProps)
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || "Gagal mendapat feedback AI.");
 
+          const cleanedFeedback = data.feedback.replace(/\*\*/g, '');
+
           // Update dokumen di Firestore setelah dapat feedback AI dari server
           const docRef = doc(db, "gameSubmissions", reviewingSubmission.id);
           await updateDoc(docRef, {
               status: "graded", 
-              feedback: data.feedback, 
+              feedback: cleanedFeedback, 
               teacherNote: teacherFeedback, 
               score: teacherScore, 
               rank: teacherScore >= 900 ? 'A+' : (teacherScore >= 800 ? 'A' : 'B+')
@@ -394,7 +388,7 @@ export function GamesSection({ userRole, user, userProfile }: GamesSectionProps)
            const docRef = doc(db, "gameSubmissions", reviewingSubmission.id);
            await updateDoc(docRef, {
                 status: "rejected",
-                feedback: teacherFeedback // Simpan alasan penolakan di bidang 'feedback'
+                feedback: teacherFeedback 
            });
            setReviewingSubmission(null);
            setTeacherFeedback("");
@@ -564,7 +558,7 @@ export function GamesSection({ userRole, user, userProfile }: GamesSectionProps)
                       </div>
                     </div>
                     
-                    {/* KOREKSI: Tampilkan feedback HANYA jika ada (baik itu feedback AI atau feedback/alasan penolakan dari guru) */}
+                    {/* Tampilkan feedback HANYA jika ada (baik itu feedback AI atau feedback/alasan penolakan dari guru) */}
                     {sub.feedback && (
                         <div className="mb-4 p-3 bg-muted rounded-lg border">
                            <p className="text-xs font-medium mb-1">
@@ -694,7 +688,7 @@ export function GamesSection({ userRole, user, userProfile }: GamesSectionProps)
                                       type="number" 
                                       value={teacherScore}
                                       onChange={(e) => setTeacherScore(parseInt(e.target.value))}
-                                      max="1000" 
+                                      max="100" 
                                       min="0"
                                       readOnly={userRole !== 'teacher'} 
                                   />

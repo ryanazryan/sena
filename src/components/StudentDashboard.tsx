@@ -10,50 +10,35 @@ import {
   FileText
 } from "lucide-react";
 import { 
-  BarChart, 
-  Bar, 
+  LineChart, 
+  Line, 
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip,
-  Legend, 
+  Tooltip, 
   ResponsiveContainer 
 } from 'recharts';
-import { ScoreEntry } from "../App";
 
 interface StudentDashboardProps {
   onSectionChange: (section: string) => void;
   userRole?: 'student' | 'teacher' | null;
-  submissions: ScoreEntry[];
 }
 
-// Data dummy untuk BarChart
-const levelDistributionData = [
-  { name: 'Kurang', games: 2 },
-  { name: 'Menengah', games: 5 },
-  { name: 'Baik', games: 8 },
-  { name: 'Sangat Baik', games: 3 },
+// Data dummy untuk chart
+const progressData = [
+  { name: 'Jan', score: 60 },
+  { name: 'Feb', score: 65 },
+  { name: 'Mar', score: 72 },
+  { name: 'Apr', score: 80 },
+  { name: 'Mei', score: 85 },
 ];
 
-export function StudentDashboard({ onSectionChange, userRole, submissions }: StudentDashboardProps) {
-  
-  // Mengolah data submissions untuk chart
-  const progressData = submissions.map(sub => ({
-    name: sub.createdAt.toDate().toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
-    score: sub.score
-  }));
-
-  // Mengolah data submissions untuk statistik
-  const totalGames = submissions.length;
-  const highestScore = submissions.reduce((max, sub) => Math.max(max, sub.score), 0);
-  const totalAchievements = submissions.reduce((count, sub) => count + (sub.achievements?.length || 0), 0);
-  const currentLevel = "Menengah"; // Logika level bisa ditambahkan di sini
-
+export function StudentDashboard({ onSectionChange, userRole }: StudentDashboardProps) {
   const stats = [
-    { icon: Trophy, label: 'Skor Tertinggi', value: highestScore.toString() },
-    { icon: Brain, label: 'Level Saat Ini', value: currentLevel },
-    { icon: BookOpen, label: 'Game Diselesaikan', value: totalGames.toString() },
-    { icon: Star, label: 'Pencapaian', value: totalAchievements.toString() },
+    { icon: Trophy, label: 'Skor Tertinggi', value: '950' },
+    { icon: Brain, label: 'Level Saat Ini', value: 'Menengah' },
+    { icon: BookOpen, label: 'Game Diselesaikan', value: '8' },
+    { icon: Star, label: 'Pencapaian', value: '12' },
   ];
 
   return (
@@ -65,26 +50,25 @@ export function StudentDashboard({ onSectionChange, userRole, submissions }: Stu
       </div>
 
       {/* Main Content: Progress Chart & Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Progress Chart Card */}
         <Card className="md:col-span-2">
           <CardHeader>
-            <CardTitle>Distribusi Nilai Berdasarkan Level</CardTitle>
+            <CardTitle>Perkembangan Nilai Literasi</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={levelDistributionData}
+                <LineChart
+                  data={progressData}
                   margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis />
                   <Tooltip />
-                  <Legend />
-                  <Bar dataKey="games" fill="#488000" />
-                </BarChart>
+                  <Line type="monotone" dataKey="score" stroke="#488000" activeDot={{ r: 8 }} />
+                </LineChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
@@ -118,6 +102,7 @@ export function StudentDashboard({ onSectionChange, userRole, submissions }: Stu
         </div>
       </div>
 
+      {/* Stats Section */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;

@@ -18,6 +18,7 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
   const [namaLengkap, setNamaLengkap] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [kodeKelas, setKodeKelas] = useState("");
   const [selectedRole, setSelectedRole] = useState<'student' | 'teacher'>('student');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -30,7 +31,7 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
       email,
       password,
       selectedRole,
-      undefined // Kode kelas dikosongkan
+      kodeKelas
     );
 
     setIsLoading(false);
@@ -105,6 +106,18 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
+
+            {selectedRole === 'student' && (
+              <div className="space-y-2">
+                <Label htmlFor="kodeKelas">Kode Kelas (Opsional)</Label>
+                <Input 
+                  id="kodeKelas" 
+                  placeholder="Bisa diisi nanti dari dashboard" 
+                  value={kodeKelas} 
+                  onChange={(e) => setKodeKelas(e.target.value)} 
+                />
+              </div>
+            )}
             
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Mendaftarkan..." : "Daftar"}
