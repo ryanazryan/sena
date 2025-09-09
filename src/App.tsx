@@ -12,9 +12,28 @@ import { GamesSection } from "./components/GamesSection";
 import { CoachingSection } from "./components/CoachingSection";
 import { Footer } from "./components/Footer";
 import { Toaster } from "./components/ui/sonner";
+import { Timestamp } from "firebase/firestore";
 
 import { StudentDashboard } from "./components/StudentDashboard";
 import { TeacherDashboard } from "./components/TeacherDashboard";
+
+export type ScoreEntry = {
+  id: string;
+  userId: string;
+  studentName?: string;
+  game: string;
+  score: number;
+  maxScore: number;
+  note?: string;
+  screenshotUrl: string;
+  status: 'pending' | 'approved' | 'rejected' | 'graded';
+  feedback?: string;
+  teacherNote?: string;
+  createdAt: Timestamp;
+  duration?: string;
+  rank?: string;
+  achievements?: string[];
+};
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);

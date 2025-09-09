@@ -20,25 +20,16 @@ import {
   Star,
   PlayCircle,
   FileText,
-  CalendarDays, // <-- Icon baru untuk Agenda
+  CalendarDays,
 } from "lucide-react";
+import { ScoreEntry } from "../App";
 
-// Tipe data submission (tidak berubah)
-interface Submission {
-  id?: string;
-  userId: string;
-  score: number;
-  aiFeedback?: string;
-}
-
-// Props (tidak berubah)
 interface StudentDashboardProps {
   user: FirebaseUser;
   userProfile: UserProfile;
   onSectionChange: (section: string) => void;
 }
 
-// Data dummy BARU untuk Agenda Game Mingguan
 const gameSchedule = [
   { week: 1, game: "Game: Menemukan Informasi", status: "Selesai" },
   { week: 2, game: "Game: Interpretasi Teks", status: "Aktif" },
@@ -48,9 +39,8 @@ const gameSchedule = [
 
 export function StudentDashboard({ user, userProfile, onSectionChange }: StudentDashboardProps) {
 
-  const [submissions, setSubmissions] = useState<Submission[]>([]);
+  const [submissions, setSubmissions] = useState<ScoreEntry[]>([]);
 
-  // Hook untuk data fetching (tidak berubah)
   useEffect(() => {
     if (!user) return; 
 
@@ -64,14 +54,13 @@ export function StudentDashboard({ user, userProfile, onSectionChange }: Student
       const subsData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      })) as Submission[];
+      })) as ScoreEntry[];
       setSubmissions(subsData);
     });
 
     return () => unsubscribe();
   }, [user]); 
 
-  // Kalkulasi statistik (tidak berubah)
   const calculatedStats = useMemo(() => {
     const count = submissions.length;
 
@@ -110,7 +99,6 @@ export function StudentDashboard({ user, userProfile, onSectionChange }: Student
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         
-        {/* === KARTU DIAGRAM DIGANTI DENGAN KARTU AGENDA KALENDER === */}
         <Card className="md:col-span-2">
           <CardHeader>
             <CardTitle className="flex items-center">
@@ -148,10 +136,43 @@ export function StudentDashboard({ user, userProfile, onSectionChange }: Student
             </div>
           </CardContent>
         </Card>
-        {/* === AKHIR PERUBAHAN === */}
-
-
-        {/* Action Cards (Tidak diubah) */}
+        <Card className="md:col-span-2">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+               <CalendarDays className="w-5 h-5 mr-2" />
+               Agenda Game Literasi
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {gameSchedule.map((item) => (
+                <div 
+                  key={item.week} 
+                  className="flex items-center space-x-4 p-3 bg-card-foreground/5 dark:bg-card-foreground/10 rounded-lg"
+                >
+                  <div className="flex flex-col items-center justify-center p-2 bg-primary rounded-md w-16 min-w-[4rem]">
+                     <span className="text-xs font-medium text-primary-foreground">PEKAN</span>
+                     <span className="text-xl font-bold text-primary-foreground">{item.week}</span>
+                  </div>
+                  <div className="flex-1">
+                     <h4 className="font-semibold text-foreground">{item.game}</h4>
+                     <p className="text-sm text-muted-foreground">Status: {item.status}</p>
+                  </div>
+                  
+                  {item.status === 'Aktif' && (
+                    <Button size="sm" onClick={() => onSectionChange('games')}>Mainkan</Button>
+                  )}
+                  {item.status === 'Selesai' && (
+                    <Badge variant="outline" className="text-green-500 border-green-500">Selesai</Badge>
+                  )}
+                   {item.status === 'Terkunci' && (
+                    <Badge variant="secondary">Terkunci</Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
         <div className="grid grid-cols-1 gap-6">
           <Card>
             <CardHeader>
@@ -179,7 +200,6 @@ export function StudentDashboard({ user, userProfile, onSectionChange }: Student
         </div>
       </div>
 
-      {/* Stats Section (Tidak diubah, tetap dinamis) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;

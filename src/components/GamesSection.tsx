@@ -62,6 +62,8 @@ import {
 } from "firebase/firestore";
 import { User as FirebaseUser } from "firebase/auth";
 import { Label } from "./ui/label";
+import { VariantProps } from "class-variance-authority";
+import { buttonVariants } from "./ui/button";
 
 interface GamesSectionProps {
   userRole?: 'student' | 'teacher' | null;
@@ -85,6 +87,24 @@ export type ScoreEntry = {
   rank?: string;
   achievements?: string[];
 };
+
+type ButtonVariant = NonNullable<VariantProps<typeof buttonVariants>['variant']>;
+
+interface GameItem {
+  id: string;
+  name: string;
+  stage: string;
+  title: string;
+  subtitle: string;
+  players: string;
+  time: string;
+  status: "unlocked" | "locked";
+  borderColor: string;
+  iconColor: string;
+  buttonVariant: ButtonVariant;
+  buttonText: string;
+  week: string;
+}
 
 export function GamesSection({ userRole, user }: GamesSectionProps) {
   const [showSubmitForm, setShowSubmitForm] = useState(false);
@@ -144,6 +164,54 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
     { id: 2, title: "Strategi Master Literasi Adventure", description: "Tips dan trik untuk skor maksimal", pages: 28, size: "1.8 MB", downloadUrl: "#", category: "Game Specific" },
   ];
 
+  const games: GameItem[] = [
+    {
+      id: "literasi-adventure",
+      name: "Literasi Adventure",
+      stage: "1",
+      title: "Dasar Literasi",
+      subtitle: "Mengakses dan Menemukan Informasi",
+      players: "1,250+ pemain",
+      time: "15-20 menit/sesi",
+      status: "unlocked",
+      week: "Minggu 1",
+      borderColor: "border-green-600",
+      iconColor: "text-green-600",
+      buttonVariant: "default",
+      buttonText: "Mulai Stage 1"
+    },
+    {
+      id: "reading-master",
+      name: "Reading Master",
+      stage: "2",
+      title: "Pemahaman Konteks",
+      subtitle: "Menginterpretasi dan Mengintegrasi",
+      players: "890+ pemain",
+      time: "20-25 menit/sesi",
+      status: "unlocked",
+      week: "Minggu 2",
+      borderColor: "border-yellow-500",
+      iconColor: "text-yellow-500",
+      buttonVariant: "default",
+      buttonText: "Mulai Stage 2"
+    },
+    {
+      id: "story-builder",
+      name: "Story Builder",
+      stage: "3",
+      title: "Literasi Lanjutan",
+      subtitle: "Mengevaluasi dan Merefleksi",
+      players: "300+ pemain",
+      time: "30-45 menit/sesi",
+      status: "locked",
+      week: "Minggu 3",
+      borderColor: "border-gray-300",
+      iconColor: "text-gray-400",
+      buttonVariant: "secondary",
+      buttonText: "Stage Terkunci"
+    }
+  ];
+
   const getRankColor = (rank?: string) => {
     if (!rank) return "text-gray-600 bg-gray-50";
     if (rank.startsWith('A')) return "text-green-600 bg-green-50";
@@ -188,7 +256,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
 
   const stats = getStatsForRole();
 
-  // --- KOMPONEN FORM SUBMIT SISWA (MENGGUNAKAN CLOUDINARY) ---
   const SubmitScoreForm = () => {
     const [game, setGame] = useState("Literasi Adventure");
     const [score, setScore] = useState("");
@@ -224,7 +291,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
       setSuccessMessage(null);
 
       try {
-        // UPLOAD FILE KE CLOUDINARY
         const formData = new FormData();
         formData.append("file", file);
         formData.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string);
@@ -241,7 +307,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
         const data = await res.json();
         const screenshotUrl = data.secure_url;
 
-        // Simpan data ke Firestore dengan URL Cloudinary
         await addDoc(collection(db, "gameSubmissions"), {
           game: game,
           score: parseInt(score),
@@ -269,7 +334,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
       }
     };
 
-    // (Tampilan Form Sukses dan Form Input tetap sama)
     if (successMessage) {
       return (
         <Card className="border-green-500">
@@ -331,7 +395,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
     );
   };
 
-  // --- FUNGSI APPROVAL GURU (REAL DATABASE) ---
   const handleApprove = async () => {
     if (!reviewingSubmission) return;
 
@@ -339,7 +402,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
     setApprovalError(null);
 
     try {
-      // Panggil server backend baru di port 3001
       const res = await fetch('http://localhost:3001/feedback', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -356,7 +418,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
 
       const cleanedFeedback = data.feedback.replace(/\*\*/g, '');
 
-      // Update dokumen di Firestore setelah dapat feedback AI dari server
       const docRef = doc(db, "gameSubmissions", reviewingSubmission.id);
       await updateDoc(docRef, {
         status: "graded",
@@ -401,16 +462,14 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
   };
 
   const openReviewModal = (submission: ScoreEntry) => {
-    setTeacherFeedback(submission.teacherNote || (submission.status !== 'graded' ? submission.feedback : '') || ""); // Hanya load feedback jika BUKAN feedback AI (atau load teacherNote)
+    setTeacherFeedback(submission.teacherNote || (submission.status !== 'graded' ? submission.feedback : '') || "");
     setTeacherScore(submission.score);
     setApprovalError(null);
     setReviewingSubmission(submission);
   };
 
-  // --- UI UTAMA (Return) ---
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-foreground mb-4 flex items-center">
           <Gamepad2 className="w-8 h-8 mr-3 text-primary" />
@@ -421,7 +480,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
         </p>
       </div>
 
-      {/* Stats Cards (Dinamis) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
@@ -446,89 +504,166 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
           <TabsTrigger value="recommendations">Rekomendasi</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="games" className="mt-6">
-  <Card className="mb-6 border-2 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
-    <CardHeader>
-      <CardTitle className="flex items-center justify-between">
-        <div className="flex items-center">
-          <PlayCircle className="w-6 h-6 mr-3 text-primary" /> SENA Games Collection
-        </div>
-        <Badge className="bg-primary">Terbaru</Badge>
-      </CardTitle>
-      <CardDescription>
-        Kumpulan game edukatif terlengkap untuk pembelajaran literasi interaktif
-      </CardDescription>
-    </CardHeader>
-    <CardContent>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <div className="text-sm text-muted-foreground">
-              <div className="flex items-center mb-1">
-                <Users className="w-4 h-4 mr-1" /> 2,790+ pemain aktif
+        
+        
+
+          <TabsContent value="games" className="mt-6">
+          {/* Featured Game Link */}
+          {/* Stage 1: Minggu Pertama */}
+            <Card className="mb-8 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-lg">Panduan Lengkap SENA Games</CardTitle>
+                <CardDescription className="text-sm">
+                  Panduan komprehensif untuk semua stage pembelajaran dengan tips dan strategi bermain yang efektif
+                </CardDescription>
+                <div className="flex text-xs text-muted-foreground space-x-4 mt-2">
+                  <span>45 halaman</span>
+                  <span>2.8 MB</span>
+                </div>
               </div>
-              <div className="flex items-center">
-                <Star className="w-4 h-4 mr-1 text-yellow-500" /> 4.8/5 rating
+              <div className="flex gap-2">
+                <Button className="bg-green-600 hover:bg-green-700">
+                  <Download className="w-4 h-4 mr-2" /> Download PDF
+                </Button>
+                <Button variant="outline" size="icon">
+                  <Eye className="w-4 h-4" />
+                </Button>
               </div>
             </div>
-          </div>
-          <Button
-            size="lg"
-            className="bg-primary hover:bg-primary/90"
-            onClick={() => window.open("https://s.id/senagames", "_blank")}
-          >
-            <ExternalLink className="w-4 h-4 mr-2" /> Main Sekarang
-          </Button>
-        </div>
-        <div className="border-t pt-4">
-          <div className="flex items-center mb-3">
-            <FileText className="w-5 h-5 mr-2 text-primary" />
-            <h3 className="font-semibold">Buku Panduan PDF</h3>
-          </div>
-          <p className="text-sm text-muted-foreground mb-4">
-            Download panduan lengkap untuk memaksimalkan pengalaman bermain game.
-          </p>
-          <div className="grid sm:grid-cols-2 gap-3">
-            {guideBooks.map((book) => (
-              <div
-                key={book.id}
-                className="border rounded-lg p-3 hover:bg-muted/50 **hover:shadow-md** transition-all"
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex-1">
-                    <h4 className="font-medium text-sm leading-tight">
-                      {book.title}
-                    </h4>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {book.description}
-                    </p>
+          </Card>
+          <Card className="mb-4 border-2 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Target className="w-6 h-6 mr-3 text-primary" />
+                  Stage 1 - Dasar Literasi
+                </div>
+                <Badge className="bg-primary">Minggu 1</Badge>
+              </CardTitle>
+              <CardDescription>
+                Mengakses dan Menemukan Informasi
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="text-sm text-muted-foreground">
+                      <div className="flex items-center mb-1">
+                        <Users className="w-4 h-4 mr-1" />
+                        1,250+ pemain
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 mr-1" />
+                        15-20 menit/sesi
+                      </div>
+                    </div>
                   </div>
-                  <Badge variant="outline" className="text-xs ml-2 shrink-0">
-                    {book.category}
-                  </Badge>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                  <span>{book.pages} hal</span>
-                  <span>{book.size}</span>
-                </div>
-                <div className="flex gap-1">
-                  <Button size="sm" className="flex-1 h-7 text-xs">
-                    <Download className="w-3 h-3 mr-1" /> Download
-                  </Button>
-                  <Button size="sm" variant="outline" className="h-7 px-2">
-                    <Eye className="w-3 h-3" />
+                  <Button 
+                    size="lg" 
+                    className="bg-primary hover:bg-primary/90"
+                    onClick={() => window.open('https://s.id/senagames', '_blank')}
+                  >
+                    <PlayCircle className="w-4 h-4 mr-2" />
+                    Mulai Stage 1
                   </Button>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </CardContent>
-  </Card>
-</TabsContent>
+            </CardContent>
+          </Card>
 
-        {/* Tab Submit (Dinamis) */}
+          {/* Stage 2: Minggu Kedua */}
+          <Card className="mb-4 border-2 border-secondary bg-gradient-to-r from-secondary/5 to-secondary/10">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Brain className="w-6 h-6 mr-3 text-secondary" />
+                  Stage 2 - Pemahaman Konteks
+                </div>
+                <Badge className="bg-secondary text-secondary-foreground">Minggu 2</Badge>
+              </CardTitle>
+              <CardDescription>
+                Menginterpretasi dan Mengintegrasi
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="text-sm text-muted-foreground">
+                      <div className="flex items-center mb-1">
+                        <Users className="w-4 h-4 mr-1" />
+                        890+ pemain
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 mr-1" />
+                        20-25 menit/sesi
+                      </div>
+                    </div>
+                  </div>
+                  <Button 
+                    size="lg" 
+                    className="bg-secondary hover:bg-seco/90 text-secondary-foreground"
+                    onClick={() => window.open('https://s.id/senagames', '_blank')}
+                  >
+                    <PlayCircle className="w-4 h-4 mr-2" />
+                    Mulai Stage 2
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Stage 3: Minggu Ketiga */}
+          <Card className="mb-6 border-2 border-muted-foreground bg-gradient-to-r from-muted-foreground/5 to-muted-foreground/10">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <Trophy className="w-6 h-6 mr-3 text-muted-foreground" />
+                  Stage 3 - Literasi Lanjutan
+                </div>
+                <Badge variant="outline" className="border-muted-foreground">Minggu 3</Badge>
+              </CardTitle>
+              <CardDescription>
+                Mengevaluasi dan Merefleksi
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="text-sm text-muted-foreground">
+                      <div className="flex items-center mb-1">
+                        <Users className="w-4 h-4 mr-1" />
+                        650+ pemain
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 mr-1" />
+                        25-30 menit/sesi
+                      </div>
+                    </div>
+                  </div>
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    className="border-muted-foreground hover:bg-muted-foreground/10"
+                    onClick={() => window.open('https://s.id/senagames', '_blank')}
+                  >
+                    <PlayCircle className="w-4 h-4 mr-2" />
+                    Mulai Stage 3
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Buku Panduan Section */}
+          
+
+
+        </TabsContent>
+
         <TabsContent value="submit" className="mt-6">
 
           {userRole === 'student' && showSubmitForm && (
@@ -587,7 +722,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                       </div>
                     </div>
 
-                    {/* Tampilkan feedback HANYA jika ada (baik itu feedback AI atau feedback/alasan penolakan dari guru) */}
                     {sub.feedback && (
                       <div className="mb-4 p-3 bg-muted rounded-lg border">
                         <p className="text-xs font-medium mb-1">
@@ -621,7 +755,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
           </div>
         </TabsContent>
 
-        {/* Tab Rekomendasi (Statis) */}
         <TabsContent value="recommendations" className="mt-6">
           <Card className="mb-6 border-2 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
             <CardHeader>
@@ -675,7 +808,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
         </TabsContent>
       </Tabs>
 
-      {/* --- MODAL APPROVAL (UI Gabungan Guru/Siswa) --- */}
       <Dialog open={!!reviewingSubmission} onOpenChange={(open) => { if (!open) setReviewingSubmission(null); }}>
         <DialogContent className="sm:max-w-3xl">
           {reviewingSubmission && (
@@ -689,7 +821,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                 </DialogDescription>
               </DialogHeader>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 max-h-[70vh] overflow-y-auto">
-                {/* Kolom Bukti Screenshot */}
                 <div className="space-y-4">
                   <h4 className="font-medium">Bukti Screenshot Siswa</h4>
                   <div className="border rounded-lg overflow-hidden aspect-video">
@@ -705,7 +836,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                   </div>
                 </div>
 
-                {/* Kolom Feedback Guru & AI */}
                 <div className="space-y-4">
                   <h4 className="font-medium">Verifikasi & Feedback</h4>
                   <p className="text-sm text-muted-foreground">
@@ -733,7 +863,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                     />
                   </div>
 
-                  {/* Tampilkan Feedback AI (hanya dari bidang 'feedback') JIKA status = graded */}
                   {reviewingSubmission.status === 'graded' && reviewingSubmission.feedback && (
                     <div className="space-y-2">
                       <Label className="flex items-center"><Brain className="w-4 h-4 mr-2 text-primary" /> Feedback AI (Final)</Label>
