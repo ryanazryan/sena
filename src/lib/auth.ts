@@ -17,12 +17,13 @@ export interface UserProfile {
 }
 
 
+// === FUNGSI YANG DIMODIFIKASI ===
 export const registerUser = async (
   namaLengkap: string,
   email: string,
   pass: string,
   peran: 'student' | 'teacher',
-  kodeKelas?: string
+  namaKelas?: string // <-- Parameter diubah dari 'kodeKelas' menjadi 'namaKelas'
 ) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
@@ -35,8 +36,9 @@ export const registerUser = async (
       peran: peran,
     };
 
-    if (peran === 'student' && kodeKelas) {
-      newUser.kelasIds = [kodeKelas];
+    // Logika diubah: Hanya simpan jika peran 'student' DAN namaKelas diisi
+    if (peran === 'student' && namaKelas) {
+      newUser.kelasIds = [namaKelas]; // <-- Menyimpan nama kelas (cth: "Kelas 7A")
     }
 
     await setDoc(doc(db, "users", user.uid), newUser);
@@ -48,6 +50,7 @@ export const registerUser = async (
     return { user: null, error: error.message };
   }
 };
+// === AKHIR MODIFIKASI ===
 
 
 export const loginUser = async (email: string, pass: string) => {
@@ -76,7 +79,7 @@ export const signInWithGoogle = async () => {
         uid: user.uid,
         namaLengkap: user.displayName || "Pengguna Google",
         email: user.email!,
-        peran: 'student',
+        peran: 'student', // Default peran student saat login Google pertama kali
       };
       await setDoc(doc(db, "users", user.uid), newUserProfile);
     }

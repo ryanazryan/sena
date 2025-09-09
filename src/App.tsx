@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { User } from "firebase/auth"; // <--- TAMBAHKAN BARIS INI
+import { User } from "firebase/auth";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "./lib/firebase";
 import { getUserProfile, UserProfile, logoutUser } from "./lib/auth";
@@ -7,12 +7,14 @@ import { getUserProfile, UserProfile, logoutUser } from "./lib/auth";
 import { LoginPage } from "./components/LoginPage";
 import { RegisterPage } from "./components/RegisterPage";
 import { Navigation } from "./components/Navigation";
-import { HomePage } from "./components/HomePage";
 import { DigitalLibrary } from "./components/DigitalLibrary";
 import { GamesSection } from "./components/GamesSection";
 import { CoachingSection } from "./components/CoachingSection";
 import { Footer } from "./components/Footer";
 import { Toaster } from "./components/ui/sonner";
+
+import { StudentDashboard } from "./components/StudentDashboard";
+import { TeacherDashboard } from "./components/TeacherDashboard";
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -31,12 +33,13 @@ export default function App() {
           setUserProfile(firestoreProfile);
         } else {
           console.warn("Profil Firestore tidak ditemukan, membuat profil sementara dari data Auth.");
-          setUserProfile({
+          const newProfile: UserProfile = {
             uid: currentUser.uid,
             namaLengkap: currentUser.displayName || "Pengguna Baru",
             email: currentUser.email!,
-            peran: 'student', 
-          });
+            peran: 'student',
+          };
+          setUserProfile(newProfile);
         }
       } else {
         setUserProfile(null);
@@ -51,26 +54,56 @@ export default function App() {
     setActiveSection("home");
   };
 
+
   const renderContent = () => {
     const userRole = userProfile?.peran;
+
+    if (!userProfile || !user) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-background">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+        </div>
+      );
+    }
+
     switch (activeSection) {
       case "home":
-        // Menampilkan HomePage baru tanpa props tambahan
-        return <HomePage onSectionChange={function (section: string): void {
-          throw new Error("Function not implemented.");
-        } } />;
+        if (userRole === 'teacher') {
+          return <TeacherDashboard
+            user={user}
+            userProfile={userProfile}
+            onSectionChange={setActiveSection}
+          />;
+        }
+        return <StudentDashboard
+          user={user}
+          userProfile={userProfile}
+          onSectionChange={setActiveSection}
+        />;
+
       case "library":
         return <DigitalLibrary userRole={userRole} />;
       case "games":
         return <GamesSection userRole={userRole} user={user} />;
       case "coaching":
         return <CoachingSection userRole={userRole} />;
+
       default:
-        return <HomePage onSectionChange={function (section: string): void {
-          throw new Error("Function not implemented.");
-        } } />;
+        if (userRole === 'teacher') {
+          return <TeacherDashboard
+            user={user}
+            userProfile={userProfile}
+            onSectionChange={setActiveSection}
+          />;
+        }
+        return <StudentDashboard
+          user={user}
+          userProfile={userProfile}
+          onSectionChange={setActiveSection}
+        />;
     }
   };
+
 
   if (isLoading) {
     return (
@@ -82,17 +115,21 @@ export default function App() {
 
   if (!user) {
     return showLogin ? (
-      <LoginPage onShowRegister={() => setShowLogin(false)} onBack={function (): void {
-        throw new Error("Function not implemented.");
-      } } onLogin={function (): void {
-        throw new Error("Function not implemented.");
-      } } />
+      <LoginPage
+        onShowRegister={() => setShowLogin(false)}
+        onLogin={() => { }}
+        onBack={() => { }}
+      />
     ) : (
-      <RegisterPage onShowLogin={() => setShowLogin(true)} onBack={function (): void {
-          throw new Error("Function not implemented.");
-        } } onRegister={function (): void {
-          throw new Error("Function not implemented.");
-        } } />
+      <RegisterPage
+        onShowLogin={() => setShowLogin(true)}
+        onRegister={() => {
+          setShowLogin(true);
+        }}
+        onBack={() => {
+          setShowLogin(true);
+        }}
+      />
     );
   }
 

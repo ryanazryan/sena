@@ -1,5 +1,5 @@
 /// <reference types="vite/client" />
-import { useState, useEffect, useCallback } from "react"; 
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Button } from "./ui/button";
 import { Badge } from "./ui/badge";
@@ -14,18 +14,18 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-  DialogClose, // Import DialogClose untuk tombol tutup
-} from "./ui/dialog"; 
-import { 
-  Gamepad2, 
-  Upload, 
-  FileText, 
-  Clock, 
-  User, 
+  DialogClose,
+} from "./ui/dialog";
+import {
+  Gamepad2,
+  Upload,
+  FileText,
+  Clock,
+  User,
   Star,
   Calendar,
   CheckCircle,
-  AlertCircle, 
+  AlertCircle,
   BookOpen,
   Brain,
   TrendingUp,
@@ -42,45 +42,45 @@ import {
   PlayCircle,
   GraduationCap,
   Loader2,
-  FileImage, 
-  Check, 
-  X 
+  FileImage,
+  Check,
+  X
 } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 
-import { db } from "../lib/firebase"; 
-import { 
-    collection, 
-    query, 
-    where, 
-    onSnapshot, 
-    doc, 
-    updateDoc,
-    addDoc,
-    orderBy,
-    Timestamp 
+import { db } from "../lib/firebase";
+import {
+  collection,
+  query,
+  where,
+  onSnapshot,
+  doc,
+  updateDoc,
+  addDoc,
+  orderBy,
+  Timestamp
 } from "firebase/firestore";
 import { User as FirebaseUser } from "firebase/auth";
 import { Label } from "./ui/label";
 
 interface GamesSectionProps {
   userRole?: 'student' | 'teacher' | null;
-  user: FirebaseUser | null; 
+  user: FirebaseUser | null;
 }
 
 export type ScoreEntry = {
   id: string;
-  userId: string; 
-  studentName?: string; 
+  userId: string;
+  studentName?: string;
   game: string;
   score: number;
   maxScore: number;
-  note?: string; 
-  screenshotUrl: string; 
+  note?: string;
+  screenshotUrl: string;
   status: 'pending' | 'approved' | 'rejected' | 'graded';
-  feedback?: string; 
-  teacherNote?: string; 
-  createdAt: Timestamp; 
+  feedback?: string;
+  teacherNote?: string;
+  createdAt: Timestamp;
   duration?: string;
   rank?: string;
   achievements?: string[];
@@ -88,7 +88,7 @@ export type ScoreEntry = {
 
 export function GamesSection({ userRole, user }: GamesSectionProps) {
   const [showSubmitForm, setShowSubmitForm] = useState(false);
-  
+
   const [submissions, setSubmissions] = useState<ScoreEntry[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(true);
 
@@ -99,20 +99,20 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
   const [approvalError, setApprovalError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!user) return; 
+    if (!user) return;
 
     setIsLoadingData(true);
-    let q; 
+    let q;
 
-    const submissionsCol = collection(db, "gameSubmissions"); 
+    const submissionsCol = collection(db, "gameSubmissions");
 
     if (userRole === 'teacher') {
       q = query(submissionsCol, orderBy("createdAt", "desc"));
     } else {
       q = query(
-          submissionsCol, 
-          where("userId", "==", user.uid),
-          orderBy("createdAt", "desc")
+        submissionsCol,
+        where("userId", "==", user.uid),
+        orderBy("createdAt", "desc")
       );
     }
 
@@ -130,7 +130,7 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
 
     return () => unsubscribe();
 
-  }, [user, userRole]); 
+  }, [user, userRole]);
 
 
   const recommendations = [
@@ -170,19 +170,19 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
     if (userRole === 'teacher') {
       const pendingCount = submissions.filter(s => s.status === 'pending').length;
       return [
-        { icon: Gamepad2, label: 'Games Tersedia', value: '12' }, 
-        { icon: Users, label: 'Siswa Aktif', value: '156' }, 
-        { icon: Trophy, label: 'Total Kiriman', value: submissions.length.toString() }, 
-        { icon: AlertCircle, label: 'Perlu Review', value: pendingCount.toString() } 
+        { icon: Gamepad2, label: 'Games Tersedia', value: '12' },
+        { icon: Users, label: 'Siswa Aktif', value: '156' },
+        { icon: Trophy, label: 'Total Kiriman', value: submissions.length.toString() },
+        { icon: AlertCircle, label: 'Perlu Review', value: pendingCount.toString() }
       ];
     }
-    const mySubmissions = submissions; 
+    const mySubmissions = submissions;
     const highestScore = mySubmissions.length ? Math.max(...mySubmissions.map(s => s.score)) : 0;
     return [
       { icon: Gamepad2, label: 'Games Dimainkan', value: mySubmissions.length.toString() },
-      { icon: Trophy, label: 'Pencapaian', value: '15' }, 
+      { icon: Trophy, label: 'Pencapaian', value: '15' },
       { icon: Target, label: 'Skor Tertinggi', value: highestScore.toString() },
-      { icon: TrendingUp, label: 'Rata-rata', value: '83%' } 
+      { icon: TrendingUp, label: 'Rata-rata', value: '83%' }
     ];
   };
 
@@ -195,10 +195,10 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
     const [note, setNote] = useState("");
     const [file, setFile] = useState<File | null>(null);
     const [fileName, setFileName] = useState("");
-    
+
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [successMessage, setSuccessMessage] = useState<string | null>(null); 
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       if (e.target.files && e.target.files[0]) {
@@ -215,8 +215,8 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
         return;
       }
       if (!user) {
-         setError("Anda harus login untuk submit skor.");
-         return;
+        setError("Anda harus login untuk submit skor.");
+        return;
       }
 
       setIsSubmitting(true);
@@ -228,7 +228,7 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
         const formData = new FormData();
         formData.append("file", file);
         formData.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string);
-        
+
         const res = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/upload`, {
           method: "POST",
           body: formData,
@@ -240,25 +240,25 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
 
         const data = await res.json();
         const screenshotUrl = data.secure_url;
-        
+
         // Simpan data ke Firestore dengan URL Cloudinary
         await addDoc(collection(db, "gameSubmissions"), {
           game: game,
           score: parseInt(score),
-          maxScore: 100, 
+          maxScore: 100,
           note: note,
           screenshotUrl: screenshotUrl,
           userId: user.uid,
           studentName: user.displayName || user.email || "Siswa Sena",
-          status: "pending", 
+          status: "pending",
           createdAt: Timestamp.now()
         });
-        
+
         setSuccessMessage("Kiriman Anda berhasil disimpan dan sedang menunggu review dari Guru.");
 
         setTimeout(() => {
-           setShowSubmitForm(false);
-           setSuccessMessage(null);
+          setShowSubmitForm(false);
+          setSuccessMessage(null);
         }, 4000);
 
       } catch (err: any) {
@@ -272,19 +272,19 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
     // (Tampilan Form Sukses dan Form Input tetap sama)
     if (successMessage) {
       return (
-         <Card className="border-green-500">
-           <CardHeader><CardTitle className="text-green-700 flex items-center"><CheckCircle className="w-5 h-5 mr-2" /> Berhasil Disimpan!</CardTitle></CardHeader>
-           <CardContent className="space-y-4">
-             <div className="p-4 bg-muted rounded-lg border"><p className="text-sm italic">{successMessage}</p></div>
-             <Button variant="outline" onClick={() => setShowSubmitForm(false)}>Tutup</Button>
-           </CardContent>
-         </Card>
+        <Card className="border-green-500">
+          <CardHeader><CardTitle className="text-green-700 flex items-center"><CheckCircle className="w-5 h-5 mr-2" /> Berhasil Disimpan!</CardTitle></CardHeader>
+          <CardContent className="space-y-4">
+            <div className="p-4 bg-muted rounded-lg border"><p className="text-sm italic">{successMessage}</p></div>
+            <Button variant="outline" onClick={() => setShowSubmitForm(false)}>Tutup</Button>
+          </CardContent>
+        </Card>
       );
     }
 
     return (
-       <Card className="border-primary">
-         <form onSubmit={handleSubmit}>
+      <Card className="border-primary">
+        <form onSubmit={handleSubmit}>
           <CardHeader>
             <CardTitle className="flex items-center"><Send className="w-5 h-5 mr-2" /> Submit Nilai Game</CardTitle>
             <CardDescription>Submit skor game Anda untuk penilaian dan feedback AI</CardDescription>
@@ -326,87 +326,87 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
               <Button variant="outline" type="button" onClick={() => setShowSubmitForm(false)} disabled={isSubmitting}>Batal</Button>
             </div>
           </CardContent>
-         </form>
-       </Card>
+        </form>
+      </Card>
     );
   };
-  
+
   // --- FUNGSI APPROVAL GURU (REAL DATABASE) ---
   const handleApprove = async () => {
-      if (!reviewingSubmission) return;
-      
-      setIsApproving(true);
-      setApprovalError(null);
+    if (!reviewingSubmission) return;
 
-      try {
-          // Panggil server backend baru di port 3001
-          const res = await fetch('http://localhost:3001/feedback', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                  score: teacherScore, 
-                  note: reviewingSubmission.note || "Tidak ada catatan siswa.",
-                  game: reviewingSubmission.game,
-                  teacherNote: teacherFeedback 
-              })
-          });
-          
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || "Gagal mendapat feedback AI.");
+    setIsApproving(true);
+    setApprovalError(null);
 
-          const cleanedFeedback = data.feedback.replace(/\*\*/g, '');
+    try {
+      // Panggil server backend baru di port 3001
+      const res = await fetch('http://localhost:3001/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          score: teacherScore,
+          note: reviewingSubmission.note || "Tidak ada catatan siswa.",
+          game: reviewingSubmission.game,
+          teacherNote: teacherFeedback
+        })
+      });
 
-          // Update dokumen di Firestore setelah dapat feedback AI dari server
-          const docRef = doc(db, "gameSubmissions", reviewingSubmission.id);
-          await updateDoc(docRef, {
-              status: "graded", 
-              feedback: cleanedFeedback, 
-              teacherNote: teacherFeedback, 
-              score: teacherScore, 
-              rank: teacherScore >= 900 ? 'A+' : (teacherScore >= 800 ? 'A' : 'B+')
-          });
-          
-          setReviewingSubmission(null);
-          setTeacherFeedback("");
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Gagal mendapat feedback AI.");
 
-      } catch (err: any) {
-          console.error(err);
-          setApprovalError(err.message || "Gagal memproses persetujuan.");
-      } finally {
-          setIsApproving(false);
-      }
+      const cleanedFeedback = data.feedback.replace(/\*\*/g, '');
+
+      // Update dokumen di Firestore setelah dapat feedback AI dari server
+      const docRef = doc(db, "gameSubmissions", reviewingSubmission.id);
+      await updateDoc(docRef, {
+        status: "graded",
+        feedback: cleanedFeedback,
+        teacherNote: teacherFeedback,
+        score: teacherScore,
+        rank: teacherScore >= 900 ? 'A+' : (teacherScore >= 800 ? 'A' : 'B+')
+      });
+
+      setReviewingSubmission(null);
+      setTeacherFeedback("");
+
+    } catch (err: any) {
+      console.error(err);
+      setApprovalError(err.message || "Gagal memproses persetujuan.");
+    } finally {
+      setIsApproving(false);
+    }
   };
 
   const handleReject = async () => {
-       if (!reviewingSubmission || !teacherFeedback) {
-           setApprovalError("Catatan feedback wajib diisi untuk menolak kiriman.");
-           return;
-       }
-       setIsApproving(true);
-       setApprovalError(null);
-       try {
-           const docRef = doc(db, "gameSubmissions", reviewingSubmission.id);
-           await updateDoc(docRef, {
-                status: "rejected",
-                feedback: teacherFeedback 
-           });
-           setReviewingSubmission(null);
-           setTeacherFeedback("");
-       } catch(err: any) {
-            console.error(err);
-            setApprovalError("Gagal menolak kiriman.");
-       } finally {
-            setIsApproving(false);
-       }
+    if (!reviewingSubmission || !teacherFeedback) {
+      setApprovalError("Catatan feedback wajib diisi untuk menolak kiriman.");
+      return;
+    }
+    setIsApproving(true);
+    setApprovalError(null);
+    try {
+      const docRef = doc(db, "gameSubmissions", reviewingSubmission.id);
+      await updateDoc(docRef, {
+        status: "rejected",
+        feedback: teacherFeedback
+      });
+      setReviewingSubmission(null);
+      setTeacherFeedback("");
+    } catch (err: any) {
+      console.error(err);
+      setApprovalError("Gagal menolak kiriman.");
+    } finally {
+      setIsApproving(false);
+    }
   };
 
   const openReviewModal = (submission: ScoreEntry) => {
     setTeacherFeedback(submission.teacherNote || (submission.status !== 'graded' ? submission.feedback : '') || ""); // Hanya load feedback jika BUKAN feedback AI (atau load teacherNote)
     setTeacherScore(submission.score);
-    setApprovalError(null); 
+    setApprovalError(null);
     setReviewingSubmission(submission);
   };
-  
+
   // --- UI UTAMA (Return) ---
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -447,64 +447,94 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
         </TabsList>
 
         <TabsContent value="games" className="mt-6">
-           <Card className="mb-6 border-2 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
-             <CardHeader>
-              <CardTitle className="flex items-center justify-between">
-                <div className="flex items-center"><PlayCircle className="w-6 h-6 mr-3 text-primary" /> SENA Games Collection</div>
-                <Badge className="bg-primary">Terbaru</Badge>
-              </CardTitle>
-              <CardDescription>Kumpulan game edukatif terlengkap untuk pembelajaran literasi interaktif</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    <div className="text-sm text-muted-foreground">
-                      <div className="flex items-center mb-1"><Users className="w-4 h-4 mr-1" /> 2,790+ pemain aktif</div>
-                      <div className="flex items-center"><Star className="w-4 h-4 mr-1 text-yellow-500" /> 4.8/5 rating</div>
-                    </div>
+  <Card className="mb-6 border-2 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
+    <CardHeader>
+      <CardTitle className="flex items-center justify-between">
+        <div className="flex items-center">
+          <PlayCircle className="w-6 h-6 mr-3 text-primary" /> SENA Games Collection
+        </div>
+        <Badge className="bg-primary">Terbaru</Badge>
+      </CardTitle>
+      <CardDescription>
+        Kumpulan game edukatif terlengkap untuk pembelajaran literasi interaktif
+      </CardDescription>
+    </CardHeader>
+    <CardContent>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-4">
+            <div className="text-sm text-muted-foreground">
+              <div className="flex items-center mb-1">
+                <Users className="w-4 h-4 mr-1" /> 2,790+ pemain aktif
+              </div>
+              <div className="flex items-center">
+                <Star className="w-4 h-4 mr-1 text-yellow-500" /> 4.8/5 rating
+              </div>
+            </div>
+          </div>
+          <Button
+            size="lg"
+            className="bg-primary hover:bg-primary/90"
+            onClick={() => window.open("https://s.id/senagames", "_blank")}
+          >
+            <ExternalLink className="w-4 h-4 mr-2" /> Main Sekarang
+          </Button>
+        </div>
+        <div className="border-t pt-4">
+          <div className="flex items-center mb-3">
+            <FileText className="w-5 h-5 mr-2 text-primary" />
+            <h3 className="font-semibold">Buku Panduan PDF</h3>
+          </div>
+          <p className="text-sm text-muted-foreground mb-4">
+            Download panduan lengkap untuk memaksimalkan pengalaman bermain game.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {guideBooks.map((book) => (
+              <div
+                key={book.id}
+                className="border rounded-lg p-3 hover:bg-muted/50 **hover:shadow-md** transition-all"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-sm leading-tight">
+                      {book.title}
+                    </h4>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {book.description}
+                    </p>
                   </div>
-                  <Button size="lg" className="bg-primary hover:bg-primary/90" onClick={() => window.open('https://s.id/senagames', '_blank')}>
-                    <ExternalLink className="w-4 h-4 mr-2" /> Main Sekarang
+                  <Badge variant="outline" className="text-xs ml-2 shrink-0">
+                    {book.category}
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
+                  <span>{book.pages} hal</span>
+                  <span>{book.size}</span>
+                </div>
+                <div className="flex gap-1">
+                  <Button size="sm" className="flex-1 h-7 text-xs">
+                    <Download className="w-3 h-3 mr-1" /> Download
+                  </Button>
+                  <Button size="sm" variant="outline" className="h-7 px-2">
+                    <Eye className="w-3 h-3" />
                   </Button>
                 </div>
-                <div className="border-t pt-4">
-                  <div className="flex items-center mb-3"><FileText className="w-5 h-5 mr-2 text-primary" /> <h3 className="font-semibold">Buku Panduan PDF</h3></div>
-                  <p className="text-sm text-muted-foreground mb-4">Download panduan lengkap untuk memaksimalkan pengalaman bermain game.</p>
-                  <div className="grid sm:grid-cols-2 gap-3">
-                    {guideBooks.map(book => (
-                      <div key={book.id} className="border rounded-lg p-3 hover:bg-muted/50 transition-colors">
-                        <div className="flex items-start justify-between mb-2">
-                          <div className="flex-1">
-                            <h4 className="font-medium text-sm leading-tight">{book.title}</h4>
-                            <p className="text-xs text-muted-foreground mt-1">{book.description}</p>
-                          </div>
-                          <Badge variant="outline" className="text-xs ml-2 shrink-0">{book.category}</Badge>
-                        </div>
-                        <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
-                          <span>{book.pages} hal</span>
-                          <span>{book.size}</span>
-                        </div>
-                        <div className="flex gap-1">
-                          <Button size="sm" className="flex-1 h-7 text-xs"><Download className="w-3 h-3 mr-1" /> Download</Button>
-                          <Button size="sm" variant="outline" className="h-7 px-2"><Eye className="w-3 h-3" /></Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+            ))}
+          </div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+</TabsContent>
 
         {/* Tab Submit (Dinamis) */}
         <TabsContent value="submit" className="mt-6">
-          
+
           {userRole === 'student' && showSubmitForm && (
             <div className="mb-6"><SubmitScoreForm /></div>
           )}
-          
+
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">
@@ -516,17 +546,17 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                 </Button>
               )}
             </div>
-            
+
             {isLoadingData && (<div className="flex items-center justify-center h-40"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>)}
 
             {!isLoadingData && submissions.length === 0 && (
-                <div className="text-center py-12">
-                    <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-foreground mb-2">{userRole === 'teacher' ? 'Belum Ada Kiriman' : 'Anda Belum Submit Nilai'}</h3>
-                    <p className="text-muted-foreground">{userRole === 'teacher' ? 'Data kiriman skor siswa akan muncul di sini.' : 'Klik "Submit Nilai Baru" untuk memulai.'}</p>
-                </div>
+              <div className="text-center py-12">
+                <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-foreground mb-2">{userRole === 'teacher' ? 'Belum Ada Kiriman' : 'Anda Belum Submit Nilai'}</h3>
+                <p className="text-muted-foreground">{userRole === 'teacher' ? 'Data kiriman skor siswa akan muncul di sini.' : 'Klik "Submit Nilai Baru" untuk memulai.'}</p>
+              </div>
             )}
-            
+
             <div className="grid gap-4">
               {!isLoadingData && submissions.map(sub => (
                 <Card key={sub.id} className={`hover:shadow-md transition-shadow ${sub.status === 'pending' ? 'border-orange-200' : ''}`}>
@@ -535,7 +565,7 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                       <div className="flex-1">
                         <CardTitle className="flex items-center"><Trophy className="w-5 h-5 mr-2" /> {sub.game}</CardTitle>
                         <CardDescription className="mt-2">
-                           {userRole === 'teacher' ? `Siswa: ${sub.studentName}` : `Dimainkan pada ${sub.createdAt.toDate().toLocaleDateString('id-ID')}`}
+                          {userRole === 'teacher' ? `Siswa: ${sub.studentName}` : `Dimainkan pada ${sub.createdAt.toDate().toLocaleDateString('id-ID')}`}
                         </CardDescription>
                       </div>
                       {getStatusBadge(sub.status)}
@@ -553,35 +583,35 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                         </div>
                       </div>
                       <div className="text-right text-sm text-muted-foreground">
-                         <div className="flex items-center"><Calendar className="w-4 h-4 mr-1" /> {sub.createdAt.toDate().toLocaleDateString('id-ID')}</div>
+                        <div className="flex items-center"><Calendar className="w-4 h-4 mr-1" /> {sub.createdAt.toDate().toLocaleDateString('id-ID')}</div>
                       </div>
                     </div>
-                    
+
                     {/* Tampilkan feedback HANYA jika ada (baik itu feedback AI atau feedback/alasan penolakan dari guru) */}
                     {sub.feedback && (
-                        <div className="mb-4 p-3 bg-muted rounded-lg border">
-                           <p className="text-xs font-medium mb-1">
-                             {sub.status === 'rejected' ? "Alasan Penolakan:" : (sub.status === 'graded' ? "Feedback (AI + Guru):" : "Feedback:")}
-                           </p>
-                           <p className="text-sm italic whitespace-pre-wrap">{sub.feedback}</p>
-                        </div>
+                      <div className="mb-4 p-3 bg-muted rounded-lg border">
+                        <p className="text-xs font-medium mb-1">
+                          {sub.status === 'rejected' ? "Alasan Penolakan:" : (sub.status === 'graded' ? "Feedback (AI + Guru):" : "Feedback:")}
+                        </p>
+                        <p className="text-sm italic whitespace-pre-wrap">{sub.feedback}</p>
+                      </div>
                     )}
-                    
+
                     <div className="flex gap-2">
                       {userRole === 'teacher' ? (
-                        <Button 
-                            className="flex-1" 
-                            onClick={() => openReviewModal(sub)}
-                            variant={sub.status === 'pending' ? 'default' : 'secondary'}
+                        <Button
+                          className="flex-1"
+                          onClick={() => openReviewModal(sub)}
+                          variant={sub.status === 'pending' ? 'default' : 'secondary'}
                         >
-                           {sub.status === 'pending' && <><FileImage className="w-4 h-4 mr-2" /> Review Kiriman</>}
-                           {sub.status !== 'pending' && <><Edit className="w-4 h-4 mr-2" /> Lihat/Edit Feedback</>}
+                          {sub.status === 'pending' && <><FileImage className="w-4 h-4 mr-2" /> Review Kiriman</>}
+                          {sub.status !== 'pending' && <><Edit className="w-4 h-4 mr-2" /> Lihat/Edit Feedback</>}
                         </Button>
                       ) : (
-                         <Button variant="outline" className="flex-1" onClick={() => openReviewModal(sub)}>
-                           <Eye className="w-4 h-4 mr-2" />
-                           Lihat Detail Kiriman
-                         </Button>
+                        <Button variant="outline" className="flex-1" onClick={() => openReviewModal(sub)}>
+                          <Eye className="w-4 h-4 mr-2" />
+                          Lihat Detail Kiriman
+                        </Button>
                       )}
                     </div>
                   </CardContent>
@@ -593,8 +623,8 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
 
         {/* Tab Rekomendasi (Statis) */}
         <TabsContent value="recommendations" className="mt-6">
-           <Card className="mb-6 border-2 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
-             <CardHeader>
+          <Card className="mb-6 border-2 border-primary bg-gradient-to-r from-primary/5 to-primary/10">
+            <CardHeader>
               <CardTitle className="flex items-center justify-between">
                 <div className="flex items-center"><PlayCircle className="w-6 h-6 mr-3 text-primary" /> SENA Games Collection</div>
                 <Badge className="bg-primary">Terbaru</Badge>
@@ -644,115 +674,116 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
           </Card>
         </TabsContent>
       </Tabs>
-      
+
       {/* --- MODAL APPROVAL (UI Gabungan Guru/Siswa) --- */}
       <Dialog open={!!reviewingSubmission} onOpenChange={(open) => { if (!open) setReviewingSubmission(null); }}>
-          <DialogContent className="sm:max-w-3xl">
-              {reviewingSubmission && (
-                  <>
-                      <DialogHeader>
-                          <DialogTitle>Review Kiriman: {reviewingSubmission.game}</DialogTitle>
-                          <DialogDescription className="flex items-center gap-4 pt-2">
-                              <span>Siswa: {reviewingSubmission.studentName}</span>
-                              <span className="font-medium">Skor Diajukan: {reviewingSubmission.score}</span>
-                              {getStatusBadge(reviewingSubmission.status)}
-                          </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 max-h-[70vh] overflow-y-auto">
-                          {/* Kolom Bukti Screenshot */}
-                          <div className="space-y-4">
-                              <h4 className="font-medium">Bukti Screenshot Siswa</h4>
-                              <div className="border rounded-lg overflow-hidden aspect-video">
-                                  <ImageWithFallback
-                                      src={reviewingSubmission.screenshotUrl}
-                                      alt="Screenshot kiriman siswa"
-                                      className="w-full h-full object-cover"
-                                  />
-                              </div>
-                                <h4 className="font-medium pt-4">Catatan Siswa</h4>
-                                <div className="p-3 bg-muted rounded-lg border min-h-[50px]">
-                                   <p className="text-sm italic">{reviewingSubmission.note || "Siswa tidak memberikan catatan."}</p>
-                                </div>
-                          </div>
-                          
-                          {/* Kolom Feedback Guru & AI */}
-                          <div className="space-y-4">
-                                <h4 className="font-medium">Verifikasi & Feedback</h4>
-                                <p className="text-sm text-muted-foreground">
-                                   {userRole === 'teacher' ? "Verifikasi skor dan berikan feedback. Menyetujui akan memicu feedback AI." : "Detail kiriman dan feedback dari guru atau AI."}
-                                </p>
-                                <div className="space-y-2">
-                                  <Label>Skor Final (Verifikasi)</Label>
-                                  <Input 
-                                      type="number" 
-                                      value={teacherScore}
-                                      onChange={(e) => setTeacherScore(parseInt(e.target.value))}
-                                      max="100" 
-                                      min="0"
-                                      readOnly={userRole !== 'teacher'} 
-                                  />
-                                </div>
-                                <div className="space-y-2">
-                                   <Label>Catatan / Feedback Guru</Label>
-                                   <Textarea 
-                                      placeholder={userRole === 'teacher' ? "Tuliskan feedback Anda di sini..." : (reviewingSubmission.teacherNote || "Menunggu feedback guru...")}
-                                      className="min-h-[120px]"
-                                      value={teacherFeedback}
-                                      onChange={(e) => setTeacherFeedback(e.target.value)}
-                                      readOnly={userRole !== 'teacher'} 
-                                  />
-                                </div>
+        <DialogContent className="sm:max-w-3xl">
+          {reviewingSubmission && (
+            <>
+              <DialogHeader>
+                <DialogTitle>Review Kiriman: {reviewingSubmission.game}</DialogTitle>
+                <DialogDescription className="flex items-center gap-4 pt-2">
+                  <span>Siswa: {reviewingSubmission.studentName}</span>
+                  <span className="font-medium">Skor Diajukan: {reviewingSubmission.score}</span>
+                  {getStatusBadge(reviewingSubmission.status)}
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 py-4 max-h-[70vh] overflow-y-auto">
+                {/* Kolom Bukti Screenshot */}
+                <div className="space-y-4">
+                  <h4 className="font-medium">Bukti Screenshot Siswa</h4>
+                  <div className="border rounded-lg overflow-hidden aspect-video">
+                    <ImageWithFallback
+                      src={reviewingSubmission.screenshotUrl}
+                      alt="Screenshot kiriman siswa"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h4 className="font-medium pt-4">Catatan Siswa</h4>
+                  <div className="p-3 bg-muted rounded-lg border min-h-[50px]">
+                    <p className="text-sm italic">{reviewingSubmission.note || "Siswa tidak memberikan catatan."}</p>
+                  </div>
+                </div>
 
-                                {/* Tampilkan Feedback AI (hanya dari bidang 'feedback') JIKA status = graded */}
-                                {reviewingSubmission.status === 'graded' && reviewingSubmission.feedback && (
-                                     <div className="space-y-2">
-                                       <Label className="flex items-center"><Brain className="w-4 h-4 mr-2 text-primary" /> Feedback AI (Final)</Label>
-                                       <div className="p-3 bg-muted rounded-lg border max-h-40 overflow-y-auto">
-                                          <p className="text-sm italic whitespace-pre-wrap">{reviewingSubmission.feedback}</p>
-                                       </div>
-                                     </div>
-                                )}
-                                {/* Tampilkan feedback manual (penolakan) JIKA status = rejected */}
-                                {reviewingSubmission.status === 'rejected' && reviewingSubmission.feedback && (
-                                     <div className="space-y-2">
-                                       <Label className="flex items-center text-destructive"><X className="w-4 h-4 mr-2" /> Alasan Penolakan</Label>
-                                       <div className="p-3 bg-red-50 border-red-200 rounded-lg border">
-                                          <p className="text-sm italic text-destructive-foreground (ini salah, harusnya text-red-700)">{reviewingSubmission.feedback}</p>
-                                       </div>
-                                     </div>
-                                )}
-                          </div>
+                {/* Kolom Feedback Guru & AI */}
+                <div className="space-y-4">
+                  <h4 className="font-medium">Verifikasi & Feedback</h4>
+                  <p className="text-sm text-muted-foreground">
+                    {userRole === 'teacher' ? "Verifikasi skor dan berikan feedback. Menyetujui akan memicu feedback AI." : "Detail kiriman dan feedback dari guru atau AI."}
+                  </p>
+                  <div className="space-y-2">
+                    <Label>Skor Final (Verifikasi)</Label>
+                    <Input
+                      type="number"
+                      value={teacherScore}
+                      onChange={(e) => setTeacherScore(parseInt(e.target.value))}
+                      max="100"
+                      min="0"
+                      readOnly={userRole !== 'teacher'}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Catatan / Feedback Guru</Label>
+                    <Textarea
+                      placeholder={userRole === 'teacher' ? "Tuliskan feedback Anda di sini..." : (reviewingSubmission.teacherNote || "Menunggu feedback guru...")}
+                      className="min-h-[120px]"
+                      value={teacherFeedback}
+                      onChange={(e) => setTeacherFeedback(e.target.value)}
+                      readOnly={userRole !== 'teacher'}
+                    />
+                  </div>
+
+                  {/* Tampilkan Feedback AI (hanya dari bidang 'feedback') JIKA status = graded */}
+                  {reviewingSubmission.status === 'graded' && reviewingSubmission.feedback && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center"><Brain className="w-4 h-4 mr-2 text-primary" /> Feedback AI (Final)</Label>
+                      <div className="p-3 bg-muted rounded-lg border max-h-40 overflow-y-auto">
+                        <p className="text-sm italic whitespace-pre-wrap">{reviewingSubmission.feedback}</p>
                       </div>
+                    </div>
+                  )}
+                  {/* Tampilkan feedback manual (penolakan) JIKA status = rejected */}
+                  {reviewingSubmission.status === 'rejected' && reviewingSubmission.feedback && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center text-destructive"><X className="w-4 h-4 mr-2" /> Alasan Penolakan</Label>
+                      <div className="p-3 bg-red-50 border-red-200 rounded-lg border">
+                        <p className="text-sm italic text-destructive-foreground (ini salah, harusnya text-red-700)">{reviewingSubmission.feedback}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
 
-                      {approvalError && (<div className="text-sm text-destructive flex items-center gap-2 mb-2"><AlertCircle className="w-4 h-4" /> {approvalError}</div>)}
+              {approvalError && (<div className="text-sm text-destructive flex items-center gap-2 mb-2"><AlertCircle className="w-4 h-4" /> {approvalError}</div>)}
 
-                      {userRole === 'teacher' && (
-                          <DialogFooter className="pt-4 border-t">
-                              <Button 
-                                  variant="destructive" 
-                                  onClick={handleReject} 
-                                  disabled={isApproving}
-                              >
-                                  <X className="w-4 h-4 mr-2" /> Tolak
-                              </Button>
-                              <Button 
-                                  onClick={handleApprove} 
-                                  disabled={isApproving}
-                                  className="bg-green-600 hover:bg-green-700"
-                              >
-                                  {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
-                                  {reviewingSubmission.status === 'graded' ? 'Perbarui Feedback AI' : 'Setujui & Hasilkan Feedback AI'}
-                              </Button>
-                          </DialogFooter>
-                      )}
-                      <DialogFooter className={userRole === 'teacher' ? 'hidden' : 'pt-4 border-t'}>
-                          <DialogClose asChild>
-                              <Button variant="outline">Tutup</Button>
-                          </DialogClose>
-                      </DialogFooter>
-                  </>
+              {userRole === 'teacher' && (
+                <DialogFooter className="pt-4 border-t">
+                  <Button
+                    variant="destructive"
+                    onClick={handleReject}
+                    disabled={isApproving}
+                  >
+                    <X className="w-4 h-4 mr-2" /> Tolak
+                  </Button>
+
+                  <Button
+                    onClick={handleApprove}
+                    disabled={isApproving}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {isApproving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
+                    {reviewingSubmission.status === 'graded' ? 'Perbarui Feedback AI' : 'Setujui & Hasilkan Feedback AI'}
+                  </Button>
+                </DialogFooter>
               )}
-          </DialogContent>
+              <DialogFooter className={userRole === 'teacher' ? 'hidden' : 'pt-4 border-t'}>
+                <DialogClose asChild>
+                  <Button variant="outline">Tutup</Button>
+                </DialogClose>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
       </Dialog>
     </div>
   );

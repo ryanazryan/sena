@@ -3,6 +3,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
+// --- IMPOR TAMBAHAN UNTUK DROPDOWN ---
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+
 import { registerUser, signInWithGoogle } from "../lib/auth";
 import { User as UserIcon, X, Chrome } from "lucide-react";
 import { Toaster, toast } from "sonner";
@@ -18,20 +27,31 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
   const [namaLengkap, setNamaLengkap] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [kodeKelas, setKodeKelas] = useState("");
+  // const [kodeKelas, setKodeKelas] = useState(""); // <-- DIHAPUS
+  const [kelas, setKelas] = useState(""); // <-- STATE BARU UNTUK DROPDOWN
   const [selectedRole, setSelectedRole] = useState<'student' | 'teacher'>('student');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validasi: Jika siswa, kelas wajib diisi
+    if (selectedRole === 'student' && !kelas) {
+      toast.error("Registrasi Gagal", {
+        description: "Sebagai siswa, Anda wajib memilih kelas."
+      });
+      return; 
+    }
+    
     setIsLoading(true);
 
+    // Kirim 'kelas' sebagai parameter ke-5 (bukan lagi kodeKelas)
     const { error } = await registerUser(
       namaLengkap,
       email,
       password,
       selectedRole,
-      kodeKelas
+      kelas      // <-- Kirim state 'kelas' baru 
     );
 
     setIsLoading(false);
@@ -43,7 +63,7 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
       toast.success("Registrasi Berhasil!", {
         description: "Silakan login menggunakan akun baru Anda."
       });
-      onRegister();
+      onRegister(); // Panggil onRegister (yang di App.tsx akan setShowLogin(true))
     }
   };
   
@@ -54,7 +74,7 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
 
     if (user) {
       toast.success("Login dengan Google Berhasil!");
-      onRegister();
+      onRegister(); // Menggunakan onRegister agar kembali ke login (opsional) atau langsung onLogin
     } else {
       toast.error("Login Gagal", {
         description: error || "Gagal login dengan Google."
@@ -78,20 +98,20 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4 mb-6">
             <div className="grid grid-cols-2 gap-2">
-                <Button 
-                  type="button" 
-                  variant={selectedRole === 'student' ? 'default' : 'outline'} 
-                  onClick={() => setSelectedRole('student')}
-                >
-                  Saya Siswa
-                </Button>
-                <Button 
-                  type="button" 
-                  variant={selectedRole === 'teacher' ? 'default' : 'outline'} 
-                  onClick={() => setSelectedRole('teacher')}
-                >
-                  Saya Guru
-                </Button>
+              <Button 
+                type="button" 
+                variant={selectedRole === 'student' ? 'default' : 'outline'} 
+                onClick={() => setSelectedRole('student')}
+              >
+                Saya Siswa
+              </Button>
+              <Button 
+                type="button" 
+                variant={selectedRole === 'teacher' ? 'default' : 'outline'} 
+                onClick={() => setSelectedRole('teacher')}
+              >
+                Saya Guru
+              </Button>
             </div>
 
             <div className="space-y-2">
@@ -107,17 +127,26 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
 
+            {/* === BLOK PERUBAHAN UI === */}
             {selectedRole === 'student' && (
               <div className="space-y-2">
-                <Label htmlFor="kodeKelas">Kode Kelas (Opsional)</Label>
-                <Input 
-                  id="kodeKelas" 
-                  placeholder="Bisa diisi nanti dari dashboard" 
-                  value={kodeKelas} 
-                  onChange={(e) => setKodeKelas(e.target.value)} 
-                />
+                <Label htmlFor="kelas">Kelas</Label>
+                <Select value={kelas} onValueChange={setKelas} required>
+                  <SelectTrigger id="kelas">
+                    <SelectValue placeholder="-- Pilih Kelas Anda --" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Kelas 7A">Kelas 7A</SelectItem>
+                    <SelectItem value="Kelas 7B">Kelas 7B</SelectItem>
+                    <SelectItem value="Kelas 8A">Kelas 8A</SelectItem>
+                    <SelectItem value="Kelas 8B">Kelas 8B</SelectItem>
+                    <SelectItem value="Kelas 9A">Kelas 9A</SelectItem>
+                    {/* Tambahkan kelas lainnya di sini */}
+                  </SelectContent>
+                </Select>
               </div>
             )}
+            {/* === AKHIR BLOK PERUBAHAN === */}
             
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Mendaftarkan..." : "Daftar"}
