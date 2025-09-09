@@ -742,7 +742,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                       </div>
                     </div>
                   )}
-                  {/* Tampilkan feedback manual (penolakan) JIKA status = rejected */}
                   {reviewingSubmission.status === 'rejected' && reviewingSubmission.feedback && (
                     <div className="space-y-2">
                       <Label className="flex items-center text-destructive"><X className="w-4 h-4 mr-2" /> Alasan Penolakan</Label>
