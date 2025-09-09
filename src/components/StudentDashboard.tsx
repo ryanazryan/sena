@@ -23,6 +23,7 @@ import {
   CalendarDays,
 } from "lucide-react";
 import { ScoreEntry } from "../App";
+import { Calendar } from "./ui/calendar";
 
 interface StudentDashboardProps {
   user: FirebaseUser;
@@ -31,23 +32,22 @@ interface StudentDashboardProps {
 }
 
 const gameSchedule = [
-  { week: 1, game: "Game: Menemukan Informasi", status: "Selesai" },
-  { week: 2, game: "Game: Interpretasi Teks", status: "Aktif" },
-  { week: 3, game: "Game: Refleksi Pengalaman", status: "Terkunci" },
-  { week: 4, game: "Game: Analisis Kritis", status: "Terkunci" },
+  { week: 1, game: "Stage 1: Mengakses dan Menemukan Informasi", status: "Selesai" },
+  { week: 2, game: "Stage 2: Menginterpretasi dan Mengintegrasi", status: "Aktif" },
+  { week: 3, game: "Stage 3: Mengevaluasi dan Merefleksi", status: "Terkunci" },
 ];
 
 export function StudentDashboard({ user, userProfile, onSectionChange }: StudentDashboardProps) {
-
+  const [date, setDate] = useState<Date | undefined>(new Date());
   const [submissions, setSubmissions] = useState<ScoreEntry[]>([]);
 
   useEffect(() => {
-    if (!user) return; 
+    if (!user) return;
 
     const q = query(
       collection(db, "gameSubmissions"),
       where("userId", "==", user.uid),
-      orderBy("createdAt", "desc") 
+      orderBy("createdAt", "desc")
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -59,7 +59,7 @@ export function StudentDashboard({ user, userProfile, onSectionChange }: Student
     });
 
     return () => unsubscribe();
-  }, [user]); 
+  }, [user]);
 
   const calculatedStats = useMemo(() => {
     const count = submissions.length;
@@ -68,7 +68,7 @@ export function StudentDashboard({ user, userProfile, onSectionChange }: Student
       return {
         highestScore: 0,
         submissionCount: 0,
-        level: "Pemula", 
+        level: "Pemula",
       };
     }
 
@@ -80,99 +80,72 @@ export function StudentDashboard({ user, userProfile, onSectionChange }: Student
       submissionCount: count,
       level: levelFromAI,
     };
-  }, [submissions]); 
+  }, [submissions]);
 
   const stats = [
     { icon: Trophy, label: 'Skor Tertinggi', value: calculatedStats.highestScore },
     { icon: Brain, label: 'Level Saat Ini', value: calculatedStats.level },
     { icon: BookOpen, label: 'Game Diselesaikan', value: calculatedStats.submissionCount },
-    { icon: Star, label: 'Pencapaian', value: '-' }, 
+    { icon: Star, label: 'Pencapaian', value: '-' },
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-      
+    <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-8 space-y-8">
       <div className="text-center md:text-left">
         <h1 className="text-3xl font-bold text-foreground">Halo, {userProfile.namaLengkap}!</h1>
         <p className="text-muted-foreground">Ini adalah ringkasan perkembangan literasi Anda.</p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <Card className="md:col-span-1">
+          <CardHeader>
+            <CardTitle className="flex items-center">
+              Agenda Game Literasi
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {gameSchedule.map((item) => (
+                <div
+                  key={item.week}
+                  className="flex items-center space-x-4 p-2 bg-card-foreground/5 dark:bg-card-foreground/10 rounded-lg"
+                >
+                 
+                  <div className="flex-1">
+                    <h4 className="font-semibold text-foreground">{item.game}</h4>
+                    <p className="text-sm text-muted-foreground">Status: {item.status}</p>
+                  </div>
+
+                  {item.status === 'Aktif' && (
+                    <Button size="sm" onClick={() => onSectionChange('games')}>Mainkan</Button>
+                  )}
+                  {item.status === 'Selesai' && (
+                    <Badge variant="outline" className="text-green-500 border-green-500">Selesai</Badge>
+                  )}
+                  {item.status === 'Terkunci' && (
+                    <Badge variant="secondary">Terkunci</Badge>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
         
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-               <CalendarDays className="w-5 h-5 mr-2" />
-               Agenda Game Literasi
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {gameSchedule.map((item) => (
-                <div 
-                  key={item.week} 
-                  className="flex items-center space-x-4 p-3 bg-card-foreground/5 dark:bg-card-foreground/10 rounded-lg"
-                >
-                  <div className="flex flex-col items-center justify-center p-2 bg-primary rounded-md w-16 min-w-[4rem]">
-                     <span className="text-xs font-medium text-primary-foreground">PEKAN</span>
-                     <span className="text-xl font-bold text-primary-foreground">{item.week}</span>
-                  </div>
-                  <div className="flex-1">
-                     <h4 className="font-semibold text-foreground">{item.game}</h4>
-                     <p className="text-sm text-muted-foreground">Status: {item.status}</p>
-                  </div>
-                  
-                  {item.status === 'Aktif' && (
-                    <Button size="sm" onClick={() => onSectionChange('games')}>Mainkan</Button>
-                  )}
-                  {item.status === 'Selesai' && (
-                    <Badge variant="outline" className="text-green-500 border-green-500">Selesai</Badge>
-                  )}
-                   {item.status === 'Terkunci' && (
-                    <Badge variant="secondary">Terkunci</Badge>
-                  )}
-                </div>
-              ))}
-            </div>
+          <CardContent className="flex justify-center">
+            <Calendar
+              mode="single"
+              selected={date}
+              onSelect={setDate}
+              className="rounded-md border"
+              classNames={{
+                cell: "h-16 w-16 text-center text-sm p-0",
+                day: "h-12 w-12",
+                head_cell: "w-12 font-normal text-sm",
+                caption_label: "text-lg font-medium",
+              }}
+            />
           </CardContent>
-        </Card>
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-               <CalendarDays className="w-5 h-5 mr-2" />
-               Agenda Game Literasi
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {gameSchedule.map((item) => (
-                <div 
-                  key={item.week} 
-                  className="flex items-center space-x-4 p-3 bg-card-foreground/5 dark:bg-card-foreground/10 rounded-lg"
-                >
-                  <div className="flex flex-col items-center justify-center p-2 bg-primary rounded-md w-16 min-w-[4rem]">
-                     <span className="text-xs font-medium text-primary-foreground">PEKAN</span>
-                     <span className="text-xl font-bold text-primary-foreground">{item.week}</span>
-                  </div>
-                  <div className="flex-1">
-                     <h4 className="font-semibold text-foreground">{item.game}</h4>
-                     <p className="text-sm text-muted-foreground">Status: {item.status}</p>
-                  </div>
-                  
-                  {item.status === 'Aktif' && (
-                    <Button size="sm" onClick={() => onSectionChange('games')}>Mainkan</Button>
-                  )}
-                  {item.status === 'Selesai' && (
-                    <Badge variant="outline" className="text-green-500 border-green-500">Selesai</Badge>
-                  )}
-                   {item.status === 'Terkunci' && (
-                    <Badge variant="secondary">Terkunci</Badge>
-                  )}
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
         <div className="grid grid-cols-1 gap-6">
           <Card>
             <CardHeader>
@@ -185,7 +158,7 @@ export function StudentDashboard({ user, userProfile, onSectionChange }: Student
               </Button>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardHeader>
               <CardTitle>Buku Panduan</CardTitle>

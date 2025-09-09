@@ -4,9 +4,10 @@ import {
   signInWithEmailAndPassword,
   signOut,
   signInWithPopup,
-  GoogleAuthProvider
+  GoogleAuthProvider,
+  updateProfile,
 } from "firebase/auth";
-import { setDoc, doc, getDoc } from "firebase/firestore";
+import { setDoc, doc, getDoc, updateDoc } from "firebase/firestore";
 
 export interface UserProfile {
   uid: string;
@@ -16,18 +17,21 @@ export interface UserProfile {
   kelasIds?: string[];
 }
 
-
-// === FUNGSI YANG DIMODIFIKASI ===
 export const registerUser = async (
   namaLengkap: string,
   email: string,
   pass: string,
   peran: 'student' | 'teacher',
-  namaKelas?: string // <-- Parameter diubah dari 'kodeKelas' menjadi 'namaKelas'
+  namaKelas?: string
 ) => {
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
     const user = userCredential.user;
+
+    // Perbarui profil di Firebase Auth
+    await updateProfile(user, {
+        displayName: namaLengkap
+    });
 
     const newUser: UserProfile = {
       uid: user.uid,
@@ -36,9 +40,8 @@ export const registerUser = async (
       peran: peran,
     };
 
-    // Logika diubah: Hanya simpan jika peran 'student' DAN namaKelas diisi
     if (peran === 'student' && namaKelas) {
-      newUser.kelasIds = [namaKelas]; // <-- Menyimpan nama kelas (cth: "Kelas 7A")
+      newUser.kelasIds = [namaKelas];
     }
 
     await setDoc(doc(db, "users", user.uid), newUser);
@@ -50,8 +53,6 @@ export const registerUser = async (
     return { user: null, error: error.message };
   }
 };
-// === AKHIR MODIFIKASI ===
-
 
 export const loginUser = async (email: string, pass: string) => {
   try {
@@ -64,7 +65,6 @@ export const loginUser = async (email: string, pass: string) => {
     return { user: null, error: error.message };
   }
 };
-
 
 export const signInWithGoogle = async () => {
   const provider = new GoogleAuthProvider();
@@ -95,7 +95,6 @@ export const logoutUser = async () => {
   await signOut(auth);
 };
 
-
 export const getUserProfile = async (uid: string): Promise<UserProfile | null> => {
   const userDocRef = doc(db, "users", uid);
   const userDoc = await getDoc(userDocRef);
@@ -106,4 +105,27 @@ export const getUserProfile = async (uid: string): Promise<UserProfile | null> =
     console.warn(`Profil pengguna dengan UID ${uid} tidak ditemukan di Firestore.`);
     return null;
   }
+};
+
+export const updateUserProfileData = async (uid: string, data: { namaLengkap: string }) => {
+    try {
+        const user = auth.currentUser;
+        if (user && user.uid === uid) {
+            await updateProfile(user, {
+                displayName: data.namaLengkap
+            });
+
+            const userDocRef = doc(db, "users", uid);
+            await updateDoc(userDocRef, {
+                namaLengkap: data.namaLengkap
+            });
+            
+            return { success: true, error: null };
+        } else {
+            throw new Error("Pengguna tidak terautentikasi atau UID tidak cocok.");
+        }
+    } catch (error: any) {
+        console.error("Gagal memperbarui profil pengguna:", error);
+        return { success: false, error: error.message };
+    }
 };

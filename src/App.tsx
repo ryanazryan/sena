@@ -13,9 +13,11 @@ import { CoachingSection } from "./components/CoachingSection";
 import { Footer } from "./components/Footer";
 import { Toaster } from "./components/ui/sonner";
 import { Timestamp } from "firebase/firestore";
+import { ProfilePage } from "./components/ProfilePage";
 
 import { StudentDashboard } from "./components/StudentDashboard";
 import { TeacherDashboard } from "./components/TeacherDashboard";
+import { AboutSection } from "./components/AboutSection";
 
 export type ScoreEntry = {
   id: string;
@@ -41,25 +43,21 @@ export default function App() {
   const [activeSection, setActiveSection] = useState("home");
   const [showLogin, setShowLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const refreshUserProfile = async () => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      const firestoreProfile = await getUserProfile(currentUser.uid);
+      setUserProfile(firestoreProfile);
+    }
+  };
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      setIsLoading(true);
       setUser(currentUser);
       if (currentUser) {
-        const firestoreProfile = await getUserProfile(currentUser.uid);
-
-        if (firestoreProfile) {
-          setUserProfile(firestoreProfile);
-        } else {
-          console.warn("Profil Firestore tidak ditemukan, membuat profil sementara dari data Auth.");
-          const newProfile: UserProfile = {
-            uid: currentUser.uid,
-            namaLengkap: currentUser.displayName || "Pengguna Baru",
-            email: currentUser.email!,
-            peran: 'student',
-          };
-          setUserProfile(newProfile);
-        }
+        await refreshUserProfile();
       } else {
         setUserProfile(null);
       }
@@ -73,7 +71,6 @@ export default function App() {
     setActiveSection("home");
   };
 
-
   const renderContent = () => {
     const userRole = userProfile?.peran;
 
@@ -86,6 +83,12 @@ export default function App() {
     }
 
     switch (activeSection) {
+      case "profile":
+        return <ProfilePage 
+                  user={user} 
+                  userProfile={userProfile} 
+                  onProfileUpdate={refreshUserProfile} 
+                />;
       case "home":
         if (userRole === 'teacher') {
           return <TeacherDashboard
@@ -106,6 +109,8 @@ export default function App() {
         return <GamesSection userRole={userRole} user={user} />;
       case "coaching":
         return <CoachingSection userRole={userRole} />;
+      case "aboutus":
+          return <AboutSection />;
 
       default:
         if (userRole === 'teacher') {

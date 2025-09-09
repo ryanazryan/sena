@@ -658,10 +658,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
             </CardContent>
           </Card>
 
-          {/* Buku Panduan Section */}
-          
-
-
         </TabsContent>
 
         <TabsContent value="submit" className="mt-6">

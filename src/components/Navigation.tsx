@@ -97,7 +97,7 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
                   </div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onSectionChange('profile')} className="cursor-pointer">
                   <User className="mr-2 h-4 w-4" />
                   <span>Profil</span>
                 </DropdownMenuItem>
