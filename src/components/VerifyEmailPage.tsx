@@ -4,7 +4,7 @@ import { MailCheck } from "lucide-react";
 import { auth } from "../lib/firebase";
 import { sendEmailVerification, User } from "firebase/auth";
 import { toast } from "sonner";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface VerifyEmailPageProps {
   user: User;
@@ -13,12 +13,24 @@ interface VerifyEmailPageProps {
 
 export function VerifyEmailPage({ user, onBackToLogin }: VerifyEmailPageProps) {
   const [isSending, setIsSending] = useState(false);
+  const [countdown, setCountdown] = useState(0);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (countdown > 0) {
+      timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [countdown]);
 
   const handleResendVerification = async () => {
+    if (countdown > 0) return;
+
     setIsSending(true);
     try {
       await sendEmailVerification(user);
       toast.success("Email verifikasi baru telah dikirim!");
+      setCountdown(60); // Set jeda waktu 60 detik
     } catch (error: any) {
       toast.error("Gagal mengirim ulang email.", {
         description: "Terjadi kesalahan atau Anda terlalu sering meminta. Coba lagi nanti."
@@ -35,7 +47,7 @@ export function VerifyEmailPage({ user, onBackToLogin }: VerifyEmailPageProps) {
             <MailCheck className="mx-auto h-12 w-12 text-primary mb-4" />
             <CardTitle className="text-2xl">Verifikasi Email Anda</CardTitle>
             <CardDescription>
-                Kami telah mengirimkan tautan verifikasi ke <strong>{user.email}</strong>. Silakan periksa kotak masuk Anda (dan folder spam) untuk melanjutkan.
+                Kami telah mengirimkan tautan verifikasi ke <strong>{user.email}</strong>. Proses ini mungkin memerlukan beberapa menit. Silakan periksa kotak masuk Anda (dan folder spam).
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4 text-center">
@@ -47,8 +59,17 @@ export function VerifyEmailPage({ user, onBackToLogin }: VerifyEmailPageProps) {
             </Button>
             <div className="text-xs text-muted-foreground">
                 Tidak menerima email?{" "}
-                <Button variant="link" className="p-0 h-auto text-xs" onClick={handleResendVerification} disabled={isSending}>
-                    {isSending ? "Mengirim..." : "Kirim ulang"}
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto text-xs" 
+                  onClick={handleResendVerification} 
+                  disabled={isSending || countdown > 0}
+                >
+                  {isSending 
+                    ? "Mengirim..." 
+                    : countdown > 0 
+                    ? `Kirim ulang dalam ${countdown} detik`
+                    : "Kirim ulang"}
                 </Button>
             </div>
         </CardContent>
@@ -56,4 +77,3 @@ export function VerifyEmailPage({ user, onBackToLogin }: VerifyEmailPageProps) {
     </div>
   );
 }
-

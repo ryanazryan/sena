@@ -1,21 +1,22 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import { loginUser, signInWithGoogle } from "../lib/auth";
 import { Mail, Lock, Eye, EyeOff, X, Chrome } from "lucide-react";
-import { Toaster } from "./ui/sonner";
+import { Toaster } from "../components/ui/sonner";
 import { toast } from "sonner";
-import { cn } from "./ui/utils";
+import { cn } from "../components/ui/utils";
 
 interface LoginPageProps {
   onBack: () => void;
   onLogin: () => void;
   onShowRegister: () => void;
+  onShowForgotPassword: () => void; // Tambahkan prop ini
 }
 
-export function LoginPage({ onBack, onLogin, onShowRegister }: LoginPageProps) {
+export function LoginPage({ onBack, onLogin, onShowRegister, onShowForgotPassword }: LoginPageProps) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -84,7 +85,17 @@ export function LoginPage({ onBack, onLogin, onShowRegister }: LoginPageProps) {
               </div>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <Button
+                  variant="link"
+                  type="button"
+                  onClick={onShowForgotPassword}
+                  className="p-0 h-auto text-xs"
+                >
+                  Lupa Password?
+                </Button>
+              </div>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input 
@@ -140,3 +151,4 @@ export function LoginPage({ onBack, onLogin, onShowRegister }: LoginPageProps) {
     </div>
   );
 }
+

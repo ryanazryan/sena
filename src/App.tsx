@@ -7,10 +7,9 @@ import { getUserProfile, UserProfile, logoutUser } from "./lib/auth";
 import { LoginPage } from "./components/LoginPage";
 import { RegisterPage } from "./components/RegisterPage";
 import { VerifyEmailPage } from "./components/VerifyEmailPage";
+import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
 import { Navigation } from "./components/Navigation";
-import { DigitalLibrary } from "./components/DigitalLibrary";
 import { GamesSection } from "./components/GamesSection";
-import { CoachingSection } from "./components/CoachingSection";
 import { Footer } from "./components/Footer";
 import { Toaster } from "./components/ui/sonner";
 import { Timestamp } from "firebase/firestore";
@@ -43,11 +42,8 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [activeSection, setActiveSection] = useState("home");
-  const [showLogin, setShowLogin] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
-  
-  const [showVerifyEmail, setShowVerifyEmail] = useState(false);
-  const [userForVerification, setUserForVerification] = useState<User | null>(null);
+  const [authScreen, setAuthScreen] = useState('login'); // login, register, forgotPassword
   
   const refreshUserProfile = async () => {
     const currentUser = auth.currentUser;
@@ -66,12 +62,23 @@ export default function App() {
       if (currentUser) {
         await currentUser.reload();
         setUser(currentUser);
+
+        // --- FITUR VERIFIKASI EMAIL DINONAKTIFKAN ---
+        // Pengecekan `currentUser.emailVerified` dihapus agar pengguna bisa langsung masuk
+        // setelah mendaftar tanpa perlu verifikasi.
+        // Untuk mengaktifkan kembali, kembalikan blok if-else di bawah ini.
+        /*
         if (currentUser.emailVerified) {
           const firestoreProfile = await getUserProfile(currentUser.uid);
           setUserProfile(firestoreProfile);
         } else {
           setUserProfile(null);
         }
+        */
+        const firestoreProfile = await getUserProfile(currentUser.uid);
+        setUserProfile(firestoreProfile);
+        // --- AKHIR PERUBAHAN ---
+
       } else {
         setUser(null);
         setUserProfile(null);
@@ -84,7 +91,7 @@ export default function App() {
   const handleLogout = async () => {
     await logoutUser();
     setActiveSection("home");
-    setShowLogin(true);
+    setAuthScreen('login');
   };
 
   const renderContent = () => {
@@ -127,13 +134,8 @@ export default function App() {
           userProfile={userProfile}
           onSectionChange={setActiveSection}
         />;
-
-      case "library":
-        return <DigitalLibrary userRole={userRole} />;
       case "games":
         return <GamesSection userRole={userRole} user={user} />;
-      case "coaching":
-        return <CoachingSection userRole={userRole} />;
       case "aboutus":
           return <AboutSection />;
 
@@ -161,50 +163,43 @@ export default function App() {
     );
   }
 
-  if (showVerifyEmail && userForVerification) {
-      return (
-          <VerifyEmailPage 
-              user={userForVerification} 
-              onBackToLogin={() => {
-                  setShowVerifyEmail(false);
-                  setUserForVerification(null);
-                  setShowLogin(true);
-              }} 
-          />
-      );
-  }
-
+  // --- FITUR VERIFIKASI EMAIL DINONAKTIFKAN ---
+  // Halaman verifikasi email tidak akan ditampilkan.
+  // Untuk mengaktifkan kembali, hapus komentar pada blok if di bawah ini.
+  /*
   if (user && !user.emailVerified) {
     return (
       <VerifyEmailPage 
         user={user} 
         onBackToLogin={async () => {
           await handleLogout();
+          setAuthScreen('login');
         }} 
       />
     );
   }
+  */
+  // --- AKHIR PERUBAHAN ---
   
   if (!user) {
-    return showLogin ? (
-      <LoginPage
-        onShowRegister={() => setShowLogin(false)}
-        onLogin={refreshUserProfile}
-        onBack={() => {}}
-      />
-    ) : (
-      <RegisterPage
-        onShowLogin={() => setShowLogin(true)}
-        onRegisterSuccess={(newUser) => {
-          setUserForVerification(newUser);
-          setShowVerifyEmail(true);
-          setShowLogin(false);
-        }}
-        onBack={() => {
-          setShowLogin(true);
-        }}
-      />
-    );
+    switch(authScreen) {
+      case 'register':
+        return <RegisterPage
+          onShowLogin={() => setAuthScreen('login')}
+          onRegisterSuccess={() => setAuthScreen('login')}
+          onBack={() => setAuthScreen('login')}
+        />;
+      case 'forgotPassword':
+        return <ForgotPasswordPage onShowLogin={() => setAuthScreen('login')} />;
+      case 'login':
+      default:
+        return <LoginPage
+          onShowRegister={() => setAuthScreen('register')}
+          onShowForgotPassword={() => setAuthScreen('forgotPassword')}
+          onLogin={refreshUserProfile}
+          onBack={() => {}}
+        />;
+    }
   }
 
   return (

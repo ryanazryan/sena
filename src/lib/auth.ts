@@ -8,6 +8,7 @@ import {
   updateProfile,
   sendEmailVerification,
   User,
+  sendPasswordResetEmail,
 } from "firebase/auth";
 import { setDoc, doc, getDoc, updateDoc } from "firebase/firestore";
 
@@ -31,7 +32,11 @@ export const registerUser = async (
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
     const user = userCredential.user;
 
-    await sendEmailVerification(user);
+    // --- FITUR VERIFIKASI EMAIL DINONAKTIFKAN ---
+    // Untuk mengaktifkan kembali, hapus komentar pada baris di bawah ini.
+    // Direkomendasikan jika Anda sudah upgrade ke paket Firebase Blaze.
+    // await sendEmailVerification(user);
+    // ------------------------------------------
 
     await updateProfile(user, {
         displayName: namaLengkap
@@ -71,6 +76,20 @@ export const loginUser = async (email: string, pass: string) => {
     return { user: null, error: error.message };
   }
 };
+
+export const sendPasswordReset = async (email: string) => {
+  try {
+    await sendPasswordResetEmail(auth, email);
+    return { success: true, error: null };
+  } catch (error: any) {
+    if (error.code === 'auth/user-not-found') {
+      return { success: false, error: "Email tidak terdaftar." };
+    }
+    console.error("Error sending password reset email:", error.message);
+    return { success: false, error: error.message };
+  }
+};
+
 
 export const signInWithGoogle = async () => {
   const provider = new GoogleAuthProvider();
