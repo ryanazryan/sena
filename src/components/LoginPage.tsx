@@ -85,7 +85,7 @@ export function LoginPage({ onBack, onLogin, onShowRegister, onShowForgotPasswor
               </div>
             </div>
             <div className="space-y-2">
-              <div className="flex items-center justify-between">
+              {/* <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
                 <Button
                   variant="link"
@@ -95,7 +95,7 @@ export function LoginPage({ onBack, onLogin, onShowRegister, onShowForgotPasswor
                 >
                   Lupa Password?
                 </Button>
-              </div>
+              </div> */}
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <Input 

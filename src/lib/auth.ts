@@ -11,9 +11,10 @@ import {
   sendPasswordResetEmail,
   updatePassword,
   EmailAuthProvider,
-  reauthenticateWithCredential
+  reauthenticateWithCredential,
+  deleteUser,
 } from "firebase/auth";
-import { setDoc, doc, getDoc, updateDoc } from "firebase/firestore";
+import { setDoc, doc, getDoc, updateDoc, deleteDoc } from "firebase/firestore";
 
 export interface UserProfile {
   uid: string;
@@ -27,12 +28,10 @@ export const registerUser = async (
   namaLengkap: string,
   email: string,
   pass: string,
-  // Parameter baru ditambahkan
   confirmPass: string,
   peran: 'student' | 'teacher',
   namaKelas?: string
 ) => {
-  // Validasi konfirmasi password
   if (pass !== confirmPass) {
     return { user: null, error: "Password dan konfirmasi password tidak cocok." };
   }
@@ -41,9 +40,6 @@ export const registerUser = async (
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
     const user = userCredential.user;
     
-    // Verifikasi email dinonaktifkan
-    // await sendEmailVerification(user);
-
     await updateProfile(user, {
         displayName: namaLengkap
     });
@@ -62,7 +58,6 @@ export const registerUser = async (
     }
 
     await setDoc(doc(db, "users", user.uid), newUser);
-
     return { user: user, error: null };
 
   } catch (error: any) {
@@ -99,20 +94,16 @@ export const sendPasswordReset = async (email: string) => {
   }
 };
 
-// Fungsi baru untuk mengubah password saat pengguna login
 export const changePassword = async (currentPassword: string, newPassword: string) => {
     const user = auth.currentUser;
     if (!user || !user.email) {
         return { success: false, error: "Pengguna tidak ditemukan atau tidak memiliki email." };
     }
 
-    // Buat kredensial dengan email dan password lama
     const credential = EmailAuthProvider.credential(user.email, currentPassword);
 
     try {
-        // Re-autentikasi pengguna untuk keamanan
         await reauthenticateWithCredential(user, credential);
-        // Jika berhasil, perbarui password
         await updatePassword(user, newPassword);
         return { success: true, error: null };
     } catch (error: any) {
@@ -122,6 +113,32 @@ export const changePassword = async (currentPassword: string, newPassword: strin
         }
         return { success: false, error: "Gagal mengubah password. Coba logout dan login kembali." };
     }
+};
+
+export const deleteUserAccount = async (password: string) => {
+  const user = auth.currentUser;
+  if (!user || !user.email) {
+    return { success: false, error: "Pengguna tidak ditemukan atau tidak memiliki email." };
+  }
+
+  const credential = EmailAuthProvider.credential(user.email, password);
+
+  try {
+    await reauthenticateWithCredential(user, credential);
+
+    const userDocRef = doc(db, "users", user.uid);
+    await deleteDoc(userDocRef);
+
+    await deleteUser(user);
+
+    return { success: true, error: null };
+  } catch (error: any) {
+    console.error("Error deleting user account:", error);
+    if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+      return { success: false, error: "Password yang Anda masukkan salah." };
+    }
+    return { success: false, error: "Gagal menghapus akun. Silakan coba lagi." };
+  }
 };
 
 export const signInWithGoogle = async () => {
@@ -201,4 +218,3 @@ export const updateUserClass = async (uid: string, kelas: string) => {
     return { success: false, error: error.message };
   }
 };
-

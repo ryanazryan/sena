@@ -5,7 +5,6 @@ import express from 'express';
 import cors from 'cors';
 import * as admin from 'firebase-admin';
 
-// Inisialisasi Firebase Admin SDK
 admin.initializeApp();
 const db = admin.firestore();
 
@@ -52,7 +51,6 @@ app.post('/feedback', async (req, res) => {
     }
 });
 
-// Cloud Function yang akan terpicu saat pengguna dihapus
 export const cleanupUserOnDelete = auth.user().onDelete(async (user) => {
     functions.logger.log('Menghapus data untuk user:', user.uid);
 
