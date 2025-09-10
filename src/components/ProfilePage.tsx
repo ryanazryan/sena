@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { User as FirebaseUser } from "firebase/auth";
-import { UserProfile, updateUserProfileData } from "../lib/auth";
+import { UserProfile, updateUserProfileData, sendPasswordReset } from "../lib/auth";
 import {
   Card,
   CardContent,
@@ -30,6 +30,7 @@ export default function ProfilePage({
   const [namaLengkap, setNamaLengkap] = useState(userProfile.namaLengkap);
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSendingReset, setIsSendingReset] = useState(false);
 
   const getInitials = (name: string) => {
     if (!name) return "??";
@@ -65,6 +66,25 @@ export default function ProfilePage({
     }
   };
 
+  const handlePasswordChange = async () => {
+    if (!user.email) {
+        toast.error("Email pengguna tidak ditemukan untuk mengirim tautan reset.");
+        return;
+    }
+    setIsSendingReset(true);
+    const { success, error } = await sendPasswordReset(user.email);
+    setIsSendingReset(false);
+
+    if (success) {
+        toast.success("Tautan reset password telah dikirim!", {
+            description: "Silakan periksa kotak masuk email Anda untuk melanjutkan."
+        });
+    } else {
+        toast.error("Gagal mengirim tautan", { description: error });
+    }
+  };
+
+
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       <div className="text-center md:text-left">
@@ -74,31 +94,20 @@ export default function ProfilePage({
       {/* Profil Card */}
       <Card>
         <CardHeader className="flex flex-col items-center text-center space-y-4">
-          {/* <Avatar className="h-24 w-24 text-3xl">
-            <AvatarImage src="" alt={userProfile.namaLengkap} />
-            <AvatarFallback>{getInitials(namaLengkap)}</AvatarFallback>
-          </Avatar> */}
-
           <div>
             <CardTitle className="text-3xl">{namaLengkap}</CardTitle>
 
-            {/* Kelas (opsional) */}
             {userProfile.kelasIds && (
               <p className="text-muted-foreground text-md mt-2">
                 {userProfile.kelasIds}
               </p>
             )}
 
-            {/* Email */}
             <CardDescription className="flex items-center gap-2 justify-center">
               <Mail className="w-4 h-4" />
               {userProfile.email}
             </CardDescription>
 
-            {/* Role */}
-            {/* <Badge className="mt-2">
-              {userProfile.peran === "teacher" ? "Guru" : "Siswa"}
-            </Badge> */}
           </div>
         </CardHeader>
 
@@ -174,7 +183,16 @@ export default function ProfilePage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button variant="outline">Ubah Kata Sandi</Button>
+          <Button variant="outline" onClick={handlePasswordChange} disabled={isSendingReset}>
+             {isSendingReset ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Mengirim...
+                </>
+              ) : (
+                "Ubah Kata Sandi"
+              )}
+          </Button>
         </CardContent>
       </Card>
 
@@ -195,3 +213,4 @@ export default function ProfilePage({
     </div>
   );
 }
+

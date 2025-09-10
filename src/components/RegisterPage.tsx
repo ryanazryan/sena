@@ -12,22 +12,22 @@ import {
 } from "../components/ui/select";
 
 import { registerUser, signInWithGoogle } from "../lib/auth";
-import { User as FirebaseUser } from "firebase/auth"; // Import tipe User
+import { User as FirebaseUser } from "firebase/auth";
 import { X, Chrome } from "lucide-react";
 import { Toaster } from "../components/ui/sonner";
 import { toast } from "sonner";
 
-// Definisikan props yang baru untuk komponen
 interface RegisterPageProps {
   onBack: () => void;
-  onRegisterSuccess: (user: FirebaseUser) => void; // Ganti onRegister menjadi onRegisterSuccess
   onShowLogin: () => void;
+  onRegisterSuccess: (user: FirebaseUser) => void; 
 }
 
-export function RegisterPage({ onBack, onRegisterSuccess, onShowLogin }: RegisterPageProps) {
+export function RegisterPage({ onBack, onShowLogin, onRegisterSuccess }: RegisterPageProps) {
   const [namaLengkap, setNamaLengkap] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [kelas, setKelas] = useState("");
   const [selectedRole, setSelectedRole] = useState<'student' | 'teacher'>('student');
   const [isLoading, setIsLoading] = useState(false);
@@ -48,6 +48,7 @@ export function RegisterPage({ onBack, onRegisterSuccess, onShowLogin }: Registe
       namaLengkap,
       email,
       password,
+      confirmPassword,
       selectedRole,
       kelas
     );
@@ -57,11 +58,12 @@ export function RegisterPage({ onBack, onRegisterSuccess, onShowLogin }: Registe
       toast.error("Registrasi Gagal", {
         description: error
       });
-    } else if (user) { // Pastikan user tidak null
+    } else if (user) {
       toast.success("Registrasi Berhasil!", {
-        description: "Silakan cek email Anda untuk verifikasi."
+        description: "Silakan masuk untuk melanjutkan."
       });
-      onRegisterSuccess(user); // Panggil onRegisterSuccess dengan objek user
+      // Memanggil onRegisterSuccess yang akan ditangani oleh App.tsx
+      onRegisterSuccess(user);
     }
   };
   
@@ -71,9 +73,7 @@ export function RegisterPage({ onBack, onRegisterSuccess, onShowLogin }: Registe
     setIsLoading(false);
 
     if (user) {
-      // Jika login Google berhasil, anggap sudah terverifikasi dan langsung login
       toast.success("Login dengan Google Berhasil!");
-      // Kita panggil onShowLogin dan biarkan App.tsx handle sisanya
       onShowLogin();
     } else {
       toast.error("Login Gagal", {
@@ -125,6 +125,10 @@ export function RegisterPage({ onBack, onRegisterSuccess, onShowLogin }: Registe
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirm-password">Konfirmasi Password</Label>
+              <Input id="confirm-password" type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
             </div>
 
             {selectedRole === 'student' && (

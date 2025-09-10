@@ -9,6 +9,9 @@ import {
   sendEmailVerification,
   User,
   sendPasswordResetEmail,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential
 } from "firebase/auth";
 import { setDoc, doc, getDoc, updateDoc } from "firebase/firestore";
 
@@ -17,7 +20,6 @@ export interface UserProfile {
   namaLengkap: string;
   email: string;
   peran: 'student' | 'teacher';
-  // Diubah menjadi opsional agar bisa mendeteksi profil yang belum lengkap
   kelasIds?: string[];
 }
 
@@ -25,18 +27,22 @@ export const registerUser = async (
   namaLengkap: string,
   email: string,
   pass: string,
+  // Parameter baru ditambahkan
+  confirmPass: string,
   peran: 'student' | 'teacher',
   namaKelas?: string
 ) => {
+  // Validasi konfirmasi password
+  if (pass !== confirmPass) {
+    return { user: null, error: "Password dan konfirmasi password tidak cocok." };
+  }
+
   try {
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
     const user = userCredential.user;
-
-    // --- FITUR VERIFIKASI EMAIL DINONAKTIFKAN ---
-    // Untuk mengaktifkan kembali, hapus komentar pada baris di bawah ini.
-    // Direkomendasikan jika Anda sudah upgrade ke paket Firebase Blaze.
+    
+    // Verifikasi email dinonaktifkan
     // await sendEmailVerification(user);
-    // ------------------------------------------
 
     await updateProfile(user, {
         displayName: namaLengkap
@@ -61,6 +67,9 @@ export const registerUser = async (
 
   } catch (error: any) {
     console.error("Error saat registrasi:", error.message);
+    if (error.code === 'auth/email-already-in-use') {
+        return { user: null, error: "Email sudah terdaftar. Silakan gunakan email lain."};
+    }
     return { user: null, error: error.message };
   }
 };
@@ -83,13 +92,37 @@ export const sendPasswordReset = async (email: string) => {
     return { success: true, error: null };
   } catch (error: any) {
     if (error.code === 'auth/user-not-found') {
-      return { success: false, error: "Email tidak terdaftar." };
+        return { success: false, error: "Email tidak terdaftar." };
     }
     console.error("Error sending password reset email:", error.message);
     return { success: false, error: error.message };
   }
 };
 
+// Fungsi baru untuk mengubah password saat pengguna login
+export const changePassword = async (currentPassword: string, newPassword: string) => {
+    const user = auth.currentUser;
+    if (!user || !user.email) {
+        return { success: false, error: "Pengguna tidak ditemukan atau tidak memiliki email." };
+    }
+
+    // Buat kredensial dengan email dan password lama
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+
+    try {
+        // Re-autentikasi pengguna untuk keamanan
+        await reauthenticateWithCredential(user, credential);
+        // Jika berhasil, perbarui password
+        await updatePassword(user, newPassword);
+        return { success: true, error: null };
+    } catch (error: any) {
+        console.error("Error changing password:", error);
+        if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+            return { success: false, error: "Password lama yang Anda masukkan salah." };
+        }
+        return { success: false, error: "Gagal mengubah password. Coba logout dan login kembali." };
+    }
+};
 
 export const signInWithGoogle = async () => {
   const provider = new GoogleAuthProvider();
@@ -98,7 +131,6 @@ export const signInWithGoogle = async () => {
     const user = result.user;
 
     const userDoc = await getDoc(doc(db, "users", user.uid));
-
 
     if (!userDoc.exists()) {
       const newUserProfile: UserProfile = {
