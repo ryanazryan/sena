@@ -10,9 +10,9 @@ import {
   orderBy,
 } from "firebase/firestore";
 
-import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Badge } from "./ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Badge } from "../components/ui/badge";
 import {
   Trophy,
   Brain,
@@ -20,10 +20,10 @@ import {
   Star,
   PlayCircle,
   FileText,
-  CalendarDays,
 } from "lucide-react";
 import { ScoreEntry } from "../App";
-import { Calendar } from "./ui/calendar";
+import { Calendar } from "../components/ui/calendar";
+import logo from "../assets/logo.png";
 
 interface StudentDashboardProps {
   user: FirebaseUser;
@@ -34,7 +34,7 @@ interface StudentDashboardProps {
 const gameSchedule = [
   { week: 1, game: "Stage 1: Mengakses dan Menemukan Informasi", status: "Selesai" },
   { week: 2, game: "Stage 2: Menginterpretasi dan Mengintegrasi", status: "Aktif" },
-  { week: 3, game: "Stage 3: Mengevaluasi dan Merefleksi", status: "Terkunci" },
+  { week: 3, game: "Stage 3: Mengevaluasi dan Merefleksi", status: "Terkunci" },
 ];
 
 export function StudentDashboard({ user, userProfile, onSectionChange }: StudentDashboardProps) {
@@ -91,9 +91,12 @@ export function StudentDashboard({ user, userProfile, onSectionChange }: Student
 
   return (
     <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-8 space-y-8">
-      <div className="text-center md:text-left">
-        <h1 className="text-3xl font-bold text-foreground">Halo, {userProfile.namaLengkap}!</h1>
-        <p className="text-muted-foreground">Ini adalah ringkasan perkembangan literasi Anda.</p>
+      <div className="flex items-center justify-center md:justify-start text-center md:text-left">
+        {/* <img src={logo} alt="SENA Logo" className="w-10 h-10 mr-4 hidden md:block" /> */}
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Halo, {userProfile.namaLengkap} 👋</h1>
+          <p className="text-muted-foreground mt-2">Ini adalah ringkasan perkembangan literasi Anda.</p>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -111,7 +114,7 @@ export function StudentDashboard({ user, userProfile, onSectionChange }: Student
                   key={item.week}
                   className="flex items-center space-x-4 p-2 bg-card-foreground/5 dark:bg-card-foreground/10 rounded-lg"
                 >
-                 
+
                   <div className="flex-1">
                     <h4 className="font-semibold text-foreground">{item.game}</h4>
                     <p className="text-sm text-muted-foreground">Status: {item.status}</p>
@@ -131,21 +134,21 @@ export function StudentDashboard({ user, userProfile, onSectionChange }: Student
             </div>
           </CardContent>
         </Card>
-        
-          <CardContent className="flex justify-center">
-            <Calendar
-              mode="single"
-              selected={date}
-              onSelect={setDate}
-              className="rounded-md border"
-              classNames={{
-                cell: "h-16 w-16 text-center text-sm p-0",
-                day: "h-12 w-12",
-                head_cell: "w-12 font-normal text-sm",
-                caption_label: "text-lg font-medium",
-              }}
-            />
-          </CardContent>
+
+        <CardContent className="flex justify-center">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={setDate}
+            className="rounded-md border"
+            classNames={{
+              cell: "h-16 w-16 text-center text-sm p-0",
+              day: "h-12 w-12",
+              head_cell: "w-12 font-normal text-sm",
+              caption_label: "text-lg font-medium",
+            }}
+          />
+        </CardContent>
         <div className="grid grid-cols-1 gap-6">
           <Card>
             <CardHeader>
@@ -165,8 +168,10 @@ export function StudentDashboard({ user, userProfile, onSectionChange }: Student
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center">
               <FileText className="w-12 h-12 text-blue-600 mb-4" />
-              <Button onClick={() => onSectionChange('library')} variant="outline" className="w-full">
-                Baca Panduan
+              <Button asChild variant="outline" className="w-full">
+                <a href="/panduan_sena.pdf" download="Panduan Belajar SENA.pdf">
+                  Unduh Panduan
+                </a>
               </Button>
             </CardContent>
           </Card>
@@ -190,3 +195,4 @@ export function StudentDashboard({ user, userProfile, onSectionChange }: Student
     </div>
   );
 }
+

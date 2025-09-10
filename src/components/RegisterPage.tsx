@@ -1,41 +1,40 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-// --- IMPOR TAMBAHAN UNTUK DROPDOWN ---
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "./ui/select";
+} from "../components/ui/select";
 
 import { registerUser, signInWithGoogle } from "../lib/auth";
-import { User as UserIcon, X, Chrome } from "lucide-react";
-import { Toaster, toast } from "sonner";
-import { cn } from "./ui/utils";
+import { User as FirebaseUser } from "firebase/auth"; // Import tipe User
+import { X, Chrome } from "lucide-react";
+import { Toaster } from "../components/ui/sonner";
+import { toast } from "sonner";
 
+// Definisikan props yang baru untuk komponen
 interface RegisterPageProps {
   onBack: () => void;
-  onRegister: () => void;
+  onRegisterSuccess: (user: FirebaseUser) => void; // Ganti onRegister menjadi onRegisterSuccess
   onShowLogin: () => void;
 }
 
-export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPageProps) {
+export function RegisterPage({ onBack, onRegisterSuccess, onShowLogin }: RegisterPageProps) {
   const [namaLengkap, setNamaLengkap] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  // const [kodeKelas, setKodeKelas] = useState(""); // <-- DIHAPUS
-  const [kelas, setKelas] = useState(""); // <-- STATE BARU UNTUK DROPDOWN
+  const [kelas, setKelas] = useState("");
   const [selectedRole, setSelectedRole] = useState<'student' | 'teacher'>('student');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validasi: Jika siswa, kelas wajib diisi
     if (selectedRole === 'student' && !kelas) {
       toast.error("Registrasi Gagal", {
         description: "Sebagai siswa, Anda wajib memilih kelas."
@@ -45,13 +44,12 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
     
     setIsLoading(true);
 
-    // Kirim 'kelas' sebagai parameter ke-5 (bukan lagi kodeKelas)
-    const { error } = await registerUser(
+    const { user, error } = await registerUser(
       namaLengkap,
       email,
       password,
       selectedRole,
-      kelas      // <-- Kirim state 'kelas' baru 
+      kelas
     );
 
     setIsLoading(false);
@@ -59,11 +57,11 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
       toast.error("Registrasi Gagal", {
         description: error
       });
-    } else {
+    } else if (user) { // Pastikan user tidak null
       toast.success("Registrasi Berhasil!", {
-        description: "Silakan login menggunakan akun baru Anda."
+        description: "Silakan cek email Anda untuk verifikasi."
       });
-      onRegister(); // Panggil onRegister (yang di App.tsx akan setShowLogin(true))
+      onRegisterSuccess(user); // Panggil onRegisterSuccess dengan objek user
     }
   };
   
@@ -73,8 +71,10 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
     setIsLoading(false);
 
     if (user) {
+      // Jika login Google berhasil, anggap sudah terverifikasi dan langsung login
       toast.success("Login dengan Google Berhasil!");
-      onRegister(); // Menggunakan onRegister agar kembali ke login (opsional) atau langsung onLogin
+      // Kita panggil onShowLogin dan biarkan App.tsx handle sisanya
+      onShowLogin();
     } else {
       toast.error("Login Gagal", {
         description: error || "Gagal login dengan Google."
@@ -127,7 +127,6 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
               <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
             </div>
 
-            {/* === BLOK PERUBAHAN UI === */}
             {selectedRole === 'student' && (
               <div className="space-y-2">
                 <Label htmlFor="kelas">Kelas</Label>
@@ -141,12 +140,10 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
                     <SelectItem value="Kelas 8A">Kelas 8A</SelectItem>
                     <SelectItem value="Kelas 8B">Kelas 8B</SelectItem>
                     <SelectItem value="Kelas 9A">Kelas 9A</SelectItem>
-                    {/* Tambahkan kelas lainnya di sini */}
                   </SelectContent>
                 </Select>
               </div>
             )}
-            {/* === AKHIR BLOK PERUBAHAN === */}
             
             <Button type="submit" className="w-full" disabled={isLoading}>
               {isLoading ? "Mendaftarkan..." : "Daftar"}
@@ -183,3 +180,4 @@ export function RegisterPage({ onBack, onRegister, onShowLogin }: RegisterPagePr
     </div>
   );
 }
+

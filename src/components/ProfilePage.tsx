@@ -7,14 +7,14 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
-} from "./ui/card";
-import { Button } from "./ui/button";
-import { Input } from "./ui/input";
-import { Label } from "./ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+} from "../components/ui/card";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Label } from "../components/ui/label";
+import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar";
 import { User, Mail, Shield, Trash2, Save, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { Badge } from "./ui/badge";
+import { Badge } from "../components/ui/badge";
 
 interface ProfilePageProps {
   user: FirebaseUser;
@@ -22,7 +22,7 @@ interface ProfilePageProps {
   onProfileUpdate: () => Promise<void>;
 }
 
-export function ProfilePage({
+export default function ProfilePage({
   user,
   userProfile,
   onProfileUpdate,
@@ -69,9 +69,6 @@ export function ProfilePage({
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
       <div className="text-center md:text-left">
         <h1 className="text-3xl font-bold text-foreground">Profil Saya</h1>
-        <p className="text-muted-foreground">
-          Kelola informasi akun dan preferensi Anda.
-        </p>
       </div>
 
       {/* Profil Card */}

@@ -351,16 +351,14 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
         <form onSubmit={handleSubmit}>
           <CardHeader>
             <CardTitle className="flex items-center"><Send className="w-5 h-5 mr-2" /> Submit Nilai Game</CardTitle>
-            <CardDescription>Submit skor game Anda untuk penilaian dan feedback AI</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="game-select">Pilih Game</Label>
                 <select id="game-select" className="w-full p-2 border rounded-lg bg-input-background mt-1" value={game} onChange={(e) => setGame(e.target.value)}>
-                  <option value="Literasi Adventure">Literasi Adventure</option>
-                  <option value="Word Master Challenge">Word Master Challenge</option>
-                  <option value="Story Builder Pro">Story Builder Pro</option>
+                  <option value="Literasi Adventure">Stage 1: Mengakses dan Menemukan Informasi</option>
+                  <option value="Word Master Challenge">Stage 2: Menginterpretasi dan Mengintegrasi</option>
+                  <option value="Story Builder Pro">Stage 3: Mengevaluasi dan Merefleksi</option>
                 </select>
               </div>
               <div>
@@ -504,13 +502,13 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
           <TabsTrigger value="recommendations">Rekomendasi</TabsTrigger>
         </TabsList>
 
-        
-        
 
-          <TabsContent value="games" className="mt-6">
+
+
+        <TabsContent value="games" className="mt-6">
           {/* Featured Game Link */}
           {/* Stage 1: Minggu Pertama */}
-            <Card className="mb-8 p-4">
+          <Card className="mb-8 p-4">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="text-lg">Panduan Lengkap SENA Games</CardTitle>
@@ -560,8 +558,8 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                       </div>
                     </div>
                   </div>
-                  <Button 
-                    size="lg" 
+                  <Button
+                    size="lg"
                     className="bg-primary hover:bg-primary/90"
                     onClick={() => window.open('https://s.id/senagames', '_blank')}
                   >
@@ -602,8 +600,8 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                       </div>
                     </div>
                   </div>
-                  <Button 
-                    size="lg" 
+                  <Button
+                    size="lg"
                     className="bg-secondary hover:bg-seco/90 text-secondary-foreground"
                     onClick={() => window.open('https://s.id/senagames', '_blank')}
                   >
@@ -644,8 +642,8 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                       </div>
                     </div>
                   </div>
-                  <Button 
-                    size="lg" 
+                  <Button
+                    size="lg"
                     variant="outline"
                     className="border-muted-foreground hover:bg-muted-foreground/10"
                     onClick={() => window.open('https://s.id/senagames', '_blank')}

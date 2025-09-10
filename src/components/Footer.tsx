@@ -13,7 +13,7 @@ import {
   ExternalLink,
   Home
 } from "lucide-react";
-// import senaLogo from 'figma:asset/847780f818afd72c32829454920762a5430501f4.png';
+import senaLogo from '../assets/logo.png';
 
 interface FooterProps {
   onSectionChange?: (section: string) => void;
@@ -25,17 +25,16 @@ export function Footer({ onSectionChange, userRole }: FooterProps) {
 
   const navigationLinks = [
     { id: 'home', label: 'Dashboard', icon: Home },
-    // { id: 'library', label: 'Library Digital', icon: BookOpen },
     { id: 'games', label: 'Games', icon: Gamepad2 },
-    // { id: 'coaching', label: 'Coaching Clinic', icon: GraduationCap }
+    { id: 'aboutus', label: 'Tentang Kami', icon: BookOpen },
   ];
 
   const contactInfo = [
     {
       type: 'email',
       label: 'Email Admin',
-      value: 'admin@sena.edu',
-      href: 'mailto:admin@sena.edu',
+      value: 'sentranayaulm@gmail.com',
+      href: 'mailto:sentranayaulm@gmail.com',
       icon: Mail,
       color: 'text-blue-600 hover:text-blue-700'
     },
@@ -74,7 +73,7 @@ export function Footer({ onSectionChange, userRole }: FooterProps) {
 
   return (
     <footer className="bg-card border-t border-border mt-auto">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Main Footer Content */}
         <div className="py-12">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -83,9 +82,9 @@ export function Footer({ onSectionChange, userRole }: FooterProps) {
             <div className="lg:col-span-1">
               <div className="flex items-center space-x-3 mb-4">
                 <img 
-                  // src={senaLogo} 
+                  src={senaLogo} 
                   alt="SENA Logo" 
-                  className="w-10 h-10"
+                  className="w-16 h-16"
                 />
                 <div>
                   <h3 className="font-semibold text-foreground">SENA</h3>
@@ -98,7 +97,7 @@ export function Footer({ onSectionChange, userRole }: FooterProps) {
               </p>
               <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                 <MapPin className="w-3 h-3" />
-                <span>Jakarta, Indonesia</span>
+                <span>Banjarbaru, Indonesia</span>
               </div>
             </div>
 
@@ -197,21 +196,7 @@ export function Footer({ onSectionChange, userRole }: FooterProps) {
                   </li>
                 ))}
               </ul>
-              
-              {/* Platform Stats */}
-              <div className="mt-6 p-3 bg-muted rounded-lg">
-                <div className="text-xs text-muted-foreground mb-2">Platform Stats</div>
-                <div className="grid grid-cols-2 gap-2 text-xs">
-                  <div>
-                    <div className="font-medium text-foreground">10,000+</div>
-                    <div className="text-muted-foreground">Pengguna</div>
-                  </div>
-                  <div>
-                    <div className="font-medium text-foreground">5,000+</div>
-                    <div className="text-muted-foreground">Buku Digital</div>
-                  </div>
-                </div>
-              </div>
+
             </div>
           </div>
         </div>
@@ -225,24 +210,12 @@ export function Footer({ onSectionChange, userRole }: FooterProps) {
             {/* Copyright */}
             <div className="flex items-center space-x-4 text-sm text-muted-foreground">
               <div className="flex items-center">
-                <span>© {currentYear} SENA Platform.</span>
-                <span className="mx-2">Dibuat dengan</span>
-                <Heart className="w-3 h-3 text-red-500 mx-1" />
-                <span>untuk pendidikan Indonesia</span>
+                <span>© {currentYear} SENA Platform</span>
               </div>
             </div>
 
             {/* Footer Links */}
             <div className="flex items-center space-x-6 text-xs text-muted-foreground">
-              <button className="hover:text-primary transition-colors">
-                Kebijakan Privasi
-              </button>
-              <button className="hover:text-primary transition-colors">
-                Syarat & Ketentuan
-              </button>
-              <button className="hover:text-primary transition-colors">
-                Bantuan
-              </button>
               <div className="flex items-center space-x-2">
                 <span>Versi 1.0.0</span>
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" title="Platform Online"></div>

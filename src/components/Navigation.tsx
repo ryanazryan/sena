@@ -11,6 +11,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
 import { LogOut, User, UserCheck, Settings, Users, BookOpen, Gamepad2, GraduationCap, Home } from "lucide-react";
 import { UserProfile } from "../lib/auth";
 import { Badge } from "./ui/badge";
+import logo from "../assets/logo.png"
 
 interface NavigationProps {
   activeSection: string;
@@ -36,13 +37,13 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
 
   return (
     <nav className="bg-card border-b border-border sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center spa ce-x-3">
             <img 
-              src="/sena_logo.png" 
+              src={logo}
               alt="SENA Logo" 
-              className="w-8 h-8"
+              className="w-16 h-16"
             />
             <div>
               <h1 className="text-xl font-semibold text-foreground">SENA</h1>

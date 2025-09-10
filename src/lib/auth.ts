@@ -6,6 +6,8 @@ import {
   signInWithPopup,
   GoogleAuthProvider,
   updateProfile,
+  sendEmailVerification,
+  User,
 } from "firebase/auth";
 import { setDoc, doc, getDoc, updateDoc } from "firebase/firestore";
 
@@ -14,6 +16,7 @@ export interface UserProfile {
   namaLengkap: string;
   email: string;
   peran: 'student' | 'teacher';
+  // Diubah menjadi opsional agar bisa mendeteksi profil yang belum lengkap
   kelasIds?: string[];
 }
 
@@ -28,7 +31,8 @@ export const registerUser = async (
     const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
     const user = userCredential.user;
 
-    // Perbarui profil di Firebase Auth
+    await sendEmailVerification(user);
+
     await updateProfile(user, {
         displayName: namaLengkap
     });
@@ -42,11 +46,13 @@ export const registerUser = async (
 
     if (peran === 'student' && namaKelas) {
       newUser.kelasIds = [namaKelas];
+    } else if (peran === 'student') {
+      newUser.kelasIds = [];
     }
 
     await setDoc(doc(db, "users", user.uid), newUser);
 
-    return { user: newUser, error: null };
+    return { user: user, error: null };
 
   } catch (error: any) {
     console.error("Error saat registrasi:", error.message);
@@ -74,12 +80,14 @@ export const signInWithGoogle = async () => {
 
     const userDoc = await getDoc(doc(db, "users", user.uid));
 
+
     if (!userDoc.exists()) {
       const newUserProfile: UserProfile = {
         uid: user.uid,
         namaLengkap: user.displayName || "Pengguna Google",
         email: user.email!,
-        peran: 'student', // Default peran student saat login Google pertama kali
+        peran: 'student',
+        kelasIds: [], 
       };
       await setDoc(doc(db, "users", user.uid), newUserProfile);
     }
@@ -129,3 +137,17 @@ export const updateUserProfileData = async (uid: string, data: { namaLengkap: st
         return { success: false, error: error.message };
     }
 };
+
+export const updateUserClass = async (uid: string, kelas: string) => {
+  try {
+    const userDocRef = doc(db, "users", uid);
+    await updateDoc(userDocRef, {
+      kelasIds: [kelas]
+    });
+    return { success: true, error: null };
+  } catch (error: any) {
+    console.error("Gagal memperbarui kelas pengguna:", error);
+    return { success: false, error: error.message };
+  }
+};
+
