@@ -44,13 +44,13 @@ export default function App() {
   const [activeSection, setActiveSection] = useState("home");
   const [isLoading, setIsLoading] = useState(true);
   const [authScreen, setAuthScreen] = useState('login'); // login, register, forgotPassword
-  
+
   const refreshUserProfile = async () => {
     const currentUser = auth.currentUser;
     if (currentUser) {
       await currentUser.reload();
       setUser({ ...currentUser });
-      
+
       const firestoreProfile = await getUserProfile(currentUser.uid);
       setUserProfile(firestoreProfile);
     }
@@ -106,21 +106,21 @@ export default function App() {
     }
 
     if (userProfile.peran === 'student' && (!userProfile.kelasIds || userProfile.kelasIds.length === 0)) {
-        return (
-            <CompleteProfilePage 
-                user={user} 
-                onProfileComplete={refreshUserProfile} 
-            />
-        );
+      return (
+        <CompleteProfilePage
+          user={user}
+          onProfileComplete={refreshUserProfile}
+        />
+      );
     }
 
     switch (activeSection) {
       case "profile":
-        return <ProfilePage 
-                  user={user} 
-                  userProfile={userProfile} 
-                  onProfileUpdate={refreshUserProfile} 
-                />;
+        return <ProfilePage
+          user={user}
+          userProfile={userProfile}
+          onProfileUpdate={refreshUserProfile}
+        />;
       case "home":
         if (userRole === 'teacher') {
           return <TeacherDashboard
@@ -137,7 +137,7 @@ export default function App() {
       case "games":
         return <GamesSection userRole={userRole} user={user} />;
       case "aboutus":
-          return <AboutSection />;
+        return <AboutSection />;
 
       default:
         if (userRole === 'teacher') {
@@ -180,15 +180,15 @@ export default function App() {
   }
   */
   // --- AKHIR PERUBAHAN ---
-  
+
   if (!user) {
-    switch(authScreen) {
+    switch (authScreen) {
       case 'register':
         return <RegisterPage
-          onShowLogin={() => setAuthScreen('login')}
-          onRegisterSuccess={() => setAuthScreen('login')}
-          onBack={() => setAuthScreen('login')}
-        />;
+  onShowLogin={() => setAuthScreen('login')}
+  onRegisterSuccess={refreshUserProfile}
+  onBack={() => setAuthScreen('login')}
+/>;
       case 'forgotPassword':
         return <ForgotPasswordPage onShowLogin={() => setAuthScreen('login')} />;
       case 'login':
@@ -197,7 +197,7 @@ export default function App() {
           onShowRegister={() => setAuthScreen('register')}
           onShowForgotPassword={() => setAuthScreen('forgotPassword')}
           onLogin={refreshUserProfile}
-          onBack={() => {}}
+          onBack={() => { }}
         />;
     }
   }
