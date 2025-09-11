@@ -1,3 +1,5 @@
-# Dependencies
+# Folder dependensi
 /node_modules
+
+# File kredensial Firebase/Google Cloud
 functions/scripts/sena.json

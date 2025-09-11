@@ -57,8 +57,8 @@ export const cleanupUserOnDelete = auth.user().onDelete(async (user) => {
     const batch = db.batch();
     const submissionsRef = db.collection('gameSubmissions').where('userId', '==', user.uid);
 
-    try {
-        const snapshot = await submissionsRef.get();
+        try {
+            const snapshot = await submissionsRef.get();
         if (snapshot.empty) {
             functions.logger.log('Tidak ada data submissions ditemukan untuk user:', user.uid);
             return;

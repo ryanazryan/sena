@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -6,12 +7,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { Sheet, SheetContent, SheetTrigger, SheetClose } from "./ui/sheet";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { LogOut, User, UserCheck, Settings, Users, BookOpen, Gamepad2, GraduationCap, Home } from "lucide-react";
+import { LogOut, User, UserCheck, Home, Gamepad2, BookOpen, Menu } from "lucide-react";
 import { UserProfile } from "../lib/auth";
 import { Badge } from "./ui/badge";
-import logo from "../assets/logo.png"
+import logo from "../assets/logo.png";
 
 interface NavigationProps {
   activeSection: string;
@@ -21,6 +23,8 @@ interface NavigationProps {
 }
 
 export function Navigation({ activeSection, onSectionChange, onLogout, userProfile }: NavigationProps) {
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
   const menuItems = [
     { id: 'home', label: 'Dasbor', icon: Home },
     { id: 'games', label: 'Permainan', icon: Gamepad2 },
@@ -35,16 +39,17 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
     return name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
   };
 
+  const handleSectionChange = (section: string) => {
+    onSectionChange(section);
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <nav className="bg-card border-b border-border sticky top-0 z-50">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          <div className="flex items-center spa ce-x-3">
-            <img 
-              src={logo}
-              alt="SENA Logo" 
-              className="w-16 h-16"
-            />
+          <div className="flex items-center space-x-3">
+            <img src={logo} alt="SENA Logo" className="w-16 h-16" />
             <div>
               <h1 className="text-xl font-semibold text-foreground">SENA</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">Self-Learning Education for New Adventure</p>
@@ -56,72 +61,77 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
               </Badge>
             )}
           </div>
-          
-          <div className="flex items-center space-x-4">
-            {/* Navigation Menu (Hidden on mobile) */}
-            <div className="hidden md:flex space-x-2">
-              {menuItems.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Button
-                    key={item.id}
-                    variant={activeSection === item.id ? "default" : "ghost"}
-                    onClick={() => onSectionChange(item.id)}
-                    className="flex items-center space-x-2"
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{item.label}</span>
-                  </Button>
-                );
-              })}
+
+          <div className="flex items-center space-x-2">
+            <div className="hidden md:flex space-x-1">
+              {menuItems.map((item) => (
+                <Button key={item.id} variant={activeSection === item.id ? "default" : "ghost"} onClick={() => onSectionChange(item.id)} className="flex items-center space-x-2">
+                  <item.icon className="w-4 h-4" />
+                  <span>{item.label}</span>
+                </Button>
+              ))}
             </div>
 
-            {/* User Profile Dropdown */}
             <DropdownMenu>
-              <DropdownMenuTrigger className="relative h-8 w-8 rounded-full hover:bg-accent cursor-pointer flex items-center justify-center outline-none">
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src="" alt={userProfile?.namaLengkap} />
-                  <AvatarFallback>
-                    {getInitials(userProfile?.namaLengkap)}
-                  </AvatarFallback>
-                </Avatar>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                  <Avatar className="h-9 w-9"><AvatarImage src="" alt={userProfile?.namaLengkap} /><AvatarFallback>{getInitials(userProfile?.namaLengkap)}</AvatarFallback></Avatar>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <DropdownMenuLabel className="font-normal">
-                  <div className="flex flex-col space-y-1">
-                    <p className="text-sm font-medium leading-none">
-                      {userProfile ? userProfile.namaLengkap : "Memuat..."}
-                    </p>
-                    <p className="text-xs leading-none text-muted-foreground">
-                      {userProfile ? userProfile.email : "..."}
-                    </p>
-                  </div>
+                  <div className="flex flex-col space-y-1"><p className="text-sm font-medium leading-none">{userProfile ? userProfile.namaLengkap : "Memuat..."}</p><p className="text-xs leading-none text-muted-foreground">{userProfile ? userProfile.email : "..."}</p></div>
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => onSectionChange('profile')} className="cursor-pointer">
-                  <User className="mr-2 h-4 w-4" />
-                  <span>Profil</span>
-                </DropdownMenuItem>
-                <DropdownMenuItem>
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Pengaturan</span>
-                </DropdownMenuItem>
-                {userRole === 'teacher' && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem>
-                      <Users className="mr-2 h-4 w-4" />
-                      <span>Kelola Siswa</span>
-                    </DropdownMenuItem>
-                  </>
-                )}
+                <DropdownMenuItem onClick={() => onSectionChange('profile')} className="cursor-pointer"><User className="mr-2 h-4 w-4" /><span>Profil</span></DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onLogout} className="cursor-pointer">
-                  <LogOut className="mr-2 h-4 w-4" />
-                  <span>Keluar</span>
-                </DropdownMenuItem>
+                <DropdownMenuItem onClick={onLogout} className="cursor-pointer"><LogOut className="mr-2 h-4 w-4" /><span>Keluar</span></DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
+
+            <div className="md:hidden">
+              <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="outline" size="icon" className="rounded-full">
+                    <Menu className="h-5 w-5" />
+                    <span className="sr-only">Buka menu</span>
+                  </Button>
+                </SheetTrigger>
+                {/* --- Perubahan di sini --- */}
+                <SheetContent side="left" className="flex flex-col w-4/5 p-0 sm:max-w-xs">
+                  <div className="flex items-center space-x-3 p-4 border-b">
+                    <img src={logo} alt="SENA Logo" className="w-12 h-12" />
+                    <div>
+                      <h2 className="text-lg font-semibold text-foreground">SENA App</h2>
+                      <p className="text-xs text-muted-foreground">Navigasi Utama</p>
+                    </div>
+                  </div>
+
+                  <div className="flex-grow p-4">
+                    <div className="flex flex-col space-y-2">
+                      {menuItems.map((item) => (
+                        <SheetClose asChild key={item.id}>
+                          <Button
+                            variant={activeSection === item.id ? "secondary" : "ghost"}
+                            onClick={() => handleSectionChange(item.id)}
+                            className="w-full justify-start text-md py-6 rounded-lg transition-all duration-200"
+                          >
+                            <item.icon className="mr-4 h-5 w-5 text-primary" />
+                            {item.label}
+                          </Button>
+                        </SheetClose>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="p-4 border-t text-center">
+                    <p className="text-xs text-muted-foreground">
+                      &copy; {new Date().getFullYear()} SENA | Belajar Jadi Seru
+                    </p>
+                  </div>
+                </SheetContent>
+              </Sheet>
+            </div>
           </div>
         </div>
       </div>

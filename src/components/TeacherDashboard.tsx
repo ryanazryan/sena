@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useMemo } from "react";
 import { User as FirebaseUser } from "firebase/auth";
-import { collection, query, where, onSnapshot, Timestamp } from "firebase/firestore";
+import { collection, query, where, onSnapshot, Timestamp, orderBy } from "firebase/firestore";
 import { db } from "../lib/firebase";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "./ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, TableFooter } from "./ui/table";
 import { Button } from "./ui/button";
-import { Users, Loader2, BarChart, PieChart, LineChart, Trophy, ListChecks, Target, Eye } from "lucide-react";
+import { Users, Loader2, BarChart, PieChart, ListChecks, BookCheck } from "lucide-react";
 import { UserProfile } from "../lib/auth";
 import { ScoreEntry } from "../App";
 import { Badge } from "./ui/badge";
@@ -21,10 +21,8 @@ import {
   Legend,
   Pie,
   Cell,
-  Line,
   BarChart as RechartsBarChart,
   PieChart as RechartsPieChart,
-  LineChart as RechartsLineChart
 } from 'recharts';
 
 type TeacherDashboardProps = {
@@ -38,19 +36,39 @@ interface DetailedScoreEntry extends ScoreEntry {
   createdAt: Timestamp;
 }
 
+type ManagedGame = {
+  id: string;
+  name: string;
+  stage: number;
+};
+
+type ScoresByStage = {
+  1?: number;
+  2?: number;
+  3?: number;
+};
+
 export function TeacherDashboard({ user, userProfile, onSectionChange }: TeacherDashboardProps) {
   const [allStudents, setAllStudents] = useState<UserProfile[]>([]);
   const [allSubmissions, setAllSubmissions] = useState<DetailedScoreEntry[]>([]);
   const [availableClasses, setAvailableClasses] = useState<string[]>([]);
   const [selectedClass, setSelectedClass] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-  const [selectedStudent, setSelectedStudent] = useState<UserProfile | null>(null);
+  const [managedGames, setManagedGames] = useState<ManagedGame[]>([]);
+
+  const gameToStageMap = useMemo(() => {
+    const map = new Map<string, number>();
+    managedGames.forEach(game => {
+      map.set(game.name, game.stage);
+    });
+    return map;
+  }, [managedGames]);
 
   useEffect(() => {
     setIsLoading(true);
     const studentsQuery = query(collection(db, "users"), where("peran", "==", "student"));
-    const submissionsQuery = query(collection(db, "gameSubmissions"));
+    const submissionsQuery = query(collection(db, "gameSubmissions"), orderBy("createdAt", "desc"));
+    const gamesQuery = query(collection(db, "managedGames"), orderBy("stage", "asc"));
 
     const unsubscribeStudents = onSnapshot(studentsQuery, (snapshot) => {
       const studentsData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() })) as UserProfile[];
@@ -62,11 +80,17 @@ export function TeacherDashboard({ user, userProfile, onSectionChange }: Teacher
       setAllSubmissions(submissionsData);
     });
 
+    const unsubscribeGames = onSnapshot(gamesQuery, (snapshot) => {
+      const gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ManagedGame));
+      setManagedGames(gamesData);
+    });
+
     const timer = setTimeout(() => setIsLoading(false), 1500);
 
     return () => {
       unsubscribeStudents();
       unsubscribeSubmissions();
+      unsubscribeGames();
       clearTimeout(timer);
     };
   }, []);
@@ -104,22 +128,52 @@ export function TeacherDashboard({ user, userProfile, onSectionChange }: Teacher
     };
   }, [selectedClass, allStudents, allSubmissions]);
 
-  const getStudentTotalScore = (studentId: string) => {
-    return filteredSubmissions
-      .filter(s => s.userId === studentId)
-      .reduce((total, sub) => total + Number(sub.score || 0), 0);
+  const getStudentScoresByStage = (studentId: string): ScoresByStage => {
+    const scores: ScoresByStage = {};
+    const studentSubmissions = filteredSubmissions.filter(s => s.userId === studentId);
+
+    studentSubmissions.forEach(sub => {
+      const stage = gameToStageMap.get(sub.game);
+      if (stage) {
+        if (!scores[stage] || sub.score > scores[stage]!) {
+          scores[stage] = Number(sub.score || 0);
+        }
+      }
+    });
+    return scores;
   };
 
+  const calculateTotalScore = (scores: ScoresByStage) => {
+    return Object.values(scores).reduce((total, score) => total + (score || 0), 0);
+  };
+
+  const classScoreAverages = useMemo(() => {
+    const totals = { 1: 0, 2: 0, 3: 0 };
+    const counts = { 1: 0, 2: 0, 3: 0 };
+
+    filteredStudents.forEach(student => {
+      const scores = getStudentScoresByStage(student.uid);
+      if (scores[1]) { totals[1] += scores[1]; counts[1]++; }
+      if (scores[2]) { totals[2] += scores[2]; counts[2]++; }
+      if (scores[3]) { totals[3] += scores[3]; counts[3]++; }
+    });
+
+    return {
+      stage1: counts[1] > 0 ? (totals[1] / counts[1]).toFixed(1) : '-',
+      stage2: counts[2] > 0 ? (totals[2] / counts[2]).toFixed(1) : '-',
+      stage3: counts[3] > 0 ? (totals[3] / counts[3]).toFixed(1) : '-',
+    };
+  }, [filteredStudents, filteredSubmissions, gameToStageMap]);
 
   const studentRankingData = useMemo(() => {
     return filteredStudents
       .map(student => ({
         name: student.namaLengkap.split(' ')[0],
-        totalScore: getStudentTotalScore(student.uid),
+        totalScore: calculateTotalScore(getStudentScoresByStage(student.uid)),
       }))
       .sort((a, b) => b.totalScore - a.totalScore)
       .slice(0, 10);
-  }, [filteredStudents, filteredSubmissions]);
+  }, [filteredStudents, filteredSubmissions, gameToStageMap]);
 
   const participationData = useMemo(() => {
     const studentIdsWithSubmissions = new Set(filteredSubmissions.map(sub => sub.userId));
@@ -131,49 +185,53 @@ export function TeacherDashboard({ user, userProfile, onSectionChange }: Teacher
     ];
   }, [filteredStudents, filteredSubmissions]);
 
-  const studentsWithSubmissions = useMemo(() => {
-    return new Set(filteredSubmissions.map(sub => sub.userId));
-}, [filteredSubmissions]);
+  // --- LOGIKA DISESUAIKAN: Skala 1-10 ---
+  const scoreDistributionData = useMemo(() => {
+    const distribution = {
+      'Stage 1': { 'Remedial (0-5)': 0, 'Cukup (6-7)': 0, 'Baik (8-9)': 0, 'Sangat Baik (10)': 0 },
+      'Stage 2': { 'Remedial (0-5)': 0, 'Cukup (6-7)': 0, 'Baik (8-9)': 0, 'Sangat Baik (10)': 0 },
+      'Stage 3': { 'Remedial (0-5)': 0, 'Cukup (6-7)': 0, 'Baik (8-9)': 0, 'Sangat Baik (10)': 0 },
+    };
 
-  const classProgressData = useMemo(() => {
-    if (!filteredSubmissions.length) return [];
-    const submissionsByDate = filteredSubmissions.reduce((acc, sub) => {
-      if (!sub.createdAt?.toDate) return acc;
-      const date = sub.createdAt.toDate().toLocaleDateString('id-ID', { day: '2-digit', month: 'short' });
-      if (!acc[date]) acc[date] = [];
-      acc[date].push(Number(sub.score || 0));
-      return acc;
-    }, {} as Record<string, number[]>);
+    const studentScores = new Map<string, ScoresByStage>();
+    filteredStudents.forEach(student => {
+      studentScores.set(student.uid, getStudentScoresByStage(student.uid));
+    });
 
-    return Object.entries(submissionsByDate)
-      .map(([date, scores]) => ({
-        date,
-        averageScore: Math.round(scores.reduce((a, b) => a + b, 0) / scores.length),
-      }))
-      .sort((a, b) => {
-        const dateA = new Date(a.date.split('/').reverse().join('-')).getTime();
-        const dateB = new Date(b.date.split('/').reverse().join('-')).getTime();
-        return dateA - dateB;
+    studentScores.forEach(scores => {
+      Object.entries(scores).forEach(([stage, score]) => {
+        const stageName = `Stage ${stage}`;
+        if (score === 10) distribution[stageName]['Sangat Baik (10)']++;
+        else if (score >= 8) distribution[stageName]['Baik (8-9)']++;
+        else if (score >= 6) distribution[stageName]['Cukup (6-7)']++;
+        else distribution[stageName]['Remedial (0-5)']++;
       });
-  }, [filteredSubmissions]);
+    });
+
+    return [
+      { name: 'Stage 1', ...distribution['Stage 1'] },
+      { name: 'Stage 2', ...distribution['Stage 2'] },
+      { name: 'Stage 3', ...distribution['Stage 3'] },
+    ];
+
+  }, [filteredStudents, filteredSubmissions, gameToStageMap]);
+  // --- SELESAI PENYESUAIAN ---
 
   const classSummaryStats = useMemo(() => {
     if (filteredSubmissions.length === 0) {
       return { overallAverage: 0, totalSubmissions: 0, highestScore: 0, mostActiveStudent: 'N/A' };
     }
 
-    const overallAverage = Math.round(
-      filteredSubmissions.reduce((acc, sub) => acc + Number(sub.score || 0), 0) / filteredSubmissions.length
-    );
-
-    const highestScore = Math.max(...filteredSubmissions.map(sub => Number(sub.score || 0)));
+    const totalScores = filteredSubmissions.map(sub => Number(sub.score || 0));
+    const overallAverage = (totalScores.reduce((acc, score) => acc + score, 0) / totalScores.length).toFixed(1);
+    const highestScore = Math.max(...totalScores);
 
     const submissionCounts = filteredSubmissions.reduce((acc, sub) => {
       acc[sub.userId] = (acc[sub.userId] || 0) + 1;
       return acc;
     }, {} as Record<string, number>);
 
-    const mostActiveUserId = Object.keys(submissionCounts).reduce((a, b) => submissionCounts[a] > submissionCounts[b] ? a : b, '');
+    const mostActiveUserId = Object.keys(submissionCounts).length > 0 ? Object.keys(submissionCounts).reduce((a, b) => submissionCounts[a] > submissionCounts[b] ? a : b) : '';
     const mostActiveStudentData = filteredStudents.find(s => s.uid === mostActiveUserId);
 
     return {
@@ -184,8 +242,8 @@ export function TeacherDashboard({ user, userProfile, onSectionChange }: Teacher
     };
   }, [filteredSubmissions, filteredStudents]);
 
-
   const COLORS = ['#0ea5e9', '#e5e7eb'];
+  const SCORE_COLORS = ['#ef4444', '#f97316', '#84cc16', '#22c55e'];
 
   if (isLoading) {
     return (
@@ -196,7 +254,7 @@ export function TeacherDashboard({ user, userProfile, onSectionChange }: Teacher
   }
 
   return (
-    <div className="max-w-8xl mx-auto px-5 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-8xl mx-auto px-6 sm:px-6 lg:px-8 py-2 space-y-8">
       <div className="flex items-center justify-between px-4">
         <div>
           <h1 className="text-3xl font-bold">Dashboard Guru</h1>
@@ -219,89 +277,69 @@ export function TeacherDashboard({ user, userProfile, onSectionChange }: Teacher
         </div>
       </div>
       <Card>
-    <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
             <div className="flex items-center gap-2"><Users className="h-6 w-6 text-primary" /> Daftar Siswa: {selectedClass}</div>
             <Badge variant="secondary">{filteredStudents.length} Siswa</Badge>
-        </CardTitle>
-        <CardDescription>Daftar lengkap siswa beserta total skor di kelas ini.</CardDescription>
-    </CardHeader>
-    <CardContent>
-        <div className="relative max-h-full overflow-y-auto border rounded-lg">
-            <Table className="table-fixed w-full">
-                <TableHeader className="sticky top-0 z-10 bg-gray-100">
-                    <TableRow>
-                        <TableHead className="w-[40%]">Nama Siswa</TableHead>
-                        <TableHead className="w-[30%]">Email</TableHead>
-                        <TableHead className="w-[20%] text-right">Status / Skor</TableHead> 
-                        <TableHead className="w-[10%] text-center">Aksi</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {filteredStudents.length > 0 ? (
-                        filteredStudents.map((student) => (
-                            <TableRow key={student.uid}>
-                                <TableCell className="font-medium truncate" title={student.namaLengkap}>
-                                    {student.namaLengkap}
-                                </TableCell>
-                                <TableCell className="truncate" title={student.email}>
-                                    {student.email}
-                                </TableCell>
-
-                                <TableCell className="text-right">
-                                    {(() => {
-                                        if (studentsWithSubmissions.has(student.uid)) {
-                                            const totalScore = getStudentTotalScore(student.uid);
-                                            
-                                            if (totalScore > 0) {
-                                                return (
-                                                    <span className="font-semibold text-primary">
-                                                        {totalScore}
-                                                    </span>
-                                                );
-                                            } else {
-                                                return (
-                                                    <span className="text-sm text-yellow-600 font-medium italic">
-                                                        Belum dinilai
-                                                    </span>
-                                                );
-                                            }
-                                        } else {
-                                            return (
-                                                <span className="text-sm text-gray-500 italic">
-                                                    Belum mengerjakan
-                                                </span>
-                                            );
-                                        }
-                                    })()}
-                                </TableCell>
-
-                                <TableCell className="text-center">
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        onClick={() => {
-                                            setSelectedStudent(student);
-                                            setIsDetailModalOpen(true);
-                                        }}
-                                    >
-                                        <Eye className="h-5 w-5 text-gray-600" />
-                                    </Button>
-                                </TableCell>
-                            </TableRow>
-                        ))
-                    ) : (
-                        <TableRow>
-                            <TableCell colSpan={4} className="text-center text-gray-500 py-8">
-                                Tidak ada siswa yang ditemukan untuk kelas ini.
-                            </TableCell>
-                        </TableRow>
-                    )}
-                </TableBody>
+          </CardTitle>
+          <CardDescription>Daftar lengkap siswa beserta skor per stage di kelas ini.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="relative max-h-full overflow-y-auto border rounded-lg">
+            <Table className="w-full">
+              <TableHeader className="sticky top-0 z-10 bg-gray-100">
+                <TableRow>
+                  <TableHead className="w-[40%]">Nama Siswa</TableHead>
+                  <TableHead className="w-[30%]">Email</TableHead>
+                  <TableHead className="w-[10%] text-center">Stage 1</TableHead>
+                  <TableHead className="w-[10%] text-center">Stage 2</TableHead>
+                  <TableHead className="w-[10%] text-center">Stage 3</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredStudents.length > 0 ? (
+                  filteredStudents.map((student) => {
+                    const scores = getStudentScoresByStage(student.uid);
+                    return (
+                      <TableRow key={student.uid}>
+                        <TableCell className="font-medium truncate" title={student.namaLengkap}>
+                          {student.namaLengkap}
+                        </TableCell>
+                        <TableCell className="truncate" title={student.email}>
+                          {student.email}
+                        </TableCell>
+                        <TableCell className="text-center font-medium text-primary">
+                          {scores[1] ?? '-'}
+                        </TableCell>
+                        <TableCell className="text-center font-medium text-primary">
+                          {scores[2] ?? '-'}
+                        </TableCell>
+                        <TableCell className="text-center font-medium text-primary">
+                          {scores[3] ?? '-'}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={5} className="text-center text-gray-500 py-8">
+                      Tidak ada siswa yang ditemukan untuk kelas ini.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+              <TableFooter className="bg-gray-100 font-bold sticky bottom-0">
+                <TableRow>
+                  <TableCell colSpan={2} className="text-left">Rata-rata Kelas</TableCell>
+                  <TableCell className="text-center">{classScoreAverages.stage1}</TableCell>
+                  <TableCell className="text-center">{classScoreAverages.stage2}</TableCell>
+                  <TableCell className="text-center">{classScoreAverages.stage3}</TableCell>
+                </TableRow>
+              </TableFooter>
             </Table>
-        </div>
-    </CardContent>
-</Card>
+          </div>
+        </CardContent>
+      </Card>
 
       {selectedClass && (
         <div className="space-y-8">
@@ -345,28 +383,30 @@ export function TeacherDashboard({ user, userProfile, onSectionChange }: Teacher
               </CardContent>
             </Card>
 
-            {/* --- PERUBAHAN TATA LETAK DI SINI --- */}
-
-            <Card className="lg:col-span-2"> {/* Diubah dari col-span-3 menjadi 2 */}
+            {/* --- CHART DISESUAIKAN: Skala 1-10 --- */}
+            <Card className="lg:col-span-2">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2"><LineChart className="h-5 w-5 text-primary" /> Progres Rata-rata Kelas</CardTitle>
-                <CardDescription>Tren skor rata-rata harian di kelas {selectedClass}.</CardDescription>
+                <CardTitle className="flex items-center gap-2"><BookCheck className="h-5 w-5 text-primary" /> Distribusi Skor per Stage</CardTitle>
+                <CardDescription>Jumlah siswa berdasarkan kategori skor di setiap stage.</CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <RechartsLineChart data={classProgressData}>
+                  <RechartsBarChart data={scoreDistributionData}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" fontSize={12} />
-                    <YAxis />
+                    <XAxis dataKey="name" fontSize={12} />
+                    <YAxis allowDecimals={false} />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="averageScore" name="Rata-rata Skor" stroke="#16a34a" strokeWidth={2} />
-                  </RechartsLineChart>
+                    <Bar dataKey="Remedial (0-5)" stackId="a" fill={SCORE_COLORS[0]} />
+                    <Bar dataKey="Cukup (6-7)" stackId="a" fill={SCORE_COLORS[1]} />
+                    <Bar dataKey="Baik (8-9)" stackId="a" fill={SCORE_COLORS[2]} />
+                    <Bar dataKey="Sangat Baik (10)" stackId="a" fill={SCORE_COLORS[3]} />
+                  </RechartsBarChart>
                 </ResponsiveContainer>
               </CardContent>
             </Card>
+            {/* --- SELESAI --- */}
 
-            {/* --- BARU: Kartu Ringkasan Kelas --- */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2"><ListChecks className="h-5 w-5 text-primary" /> Ringkasan Kelas</CardTitle>
