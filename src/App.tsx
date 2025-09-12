@@ -20,11 +20,14 @@ import { StudentDashboard } from "./components/StudentDashboard";
 import { TeacherDashboard } from "./components/TeacherDashboard";
 import { AboutSection } from "./components/AboutSection";
 
+// --- PERUBAIKAN DI SINI ---
+// Menambahkan properti 'level' pada type ScoreEntry
 export type ScoreEntry = {
   id: string;
   userId: string;
   studentName?: string;
   game: string;
+  level: number; // Properti yang ditambahkan
   score: number;
   maxScore: number;
   note?: string;
@@ -37,6 +40,7 @@ export type ScoreEntry = {
   rank?: string;
   achievements?: string[];
 };
+// --- AKHIR PERUBAIKAN ---
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
@@ -80,9 +84,7 @@ export default function App() {
     setAuthScreen('login');
   };
 
-  // --- FUNGSI INI TELAH DIPERBAIKI (LEBIH AMAN) ---
   const renderContent = () => {
-    // Garda keamanan: Tampilkan loading jika user atau profilnya belum siap
     if (!user || !userProfile) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background">
@@ -91,7 +93,6 @@ export default function App() {
       );
     }
 
-    // Cek jika siswa belum melengkapi profil (memilih kelas)
     if (userProfile.peran === 'student' && (!userProfile.kelasIds || userProfile.kelasIds.length === 0)) {
       return (
         <CompleteProfilePage

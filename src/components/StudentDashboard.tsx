@@ -122,9 +122,10 @@ export function StudentDashboard({
     submissions
       .filter(sub => sub.status === 'graded' || sub.status === 'approved')
       .forEach(sub => {
-        const existingScore = highestApprovedScores.get(sub.game) || 0;
+        const uniqueKey = `${sub.game}-L${sub.level}`;
+        const existingScore = highestApprovedScores.get(uniqueKey) || 0;
         if (sub.score > existingScore) {
-          highestApprovedScores.set(sub.game, sub.score);
+          highestApprovedScores.set(uniqueKey, sub.score);
         }
       });
 
@@ -137,21 +138,25 @@ export function StudentDashboard({
       if (game.level === 1) {
         isUnlocked = true;
       } else {
-
-        const prevGameInList = managedGames.find(g => g.level === game.level - 1);
-        if (prevGameInList) {
-          const prevGameScore = highestApprovedScores.get(prevGameInList.name) || 0;
-          if (prevGameScore >= PASSING_SCORE) {
+        const prevLevelGames = managedGames.filter(g => g.level === game.level - 1);
+        if (prevLevelGames.length > 0) {
+          // Cek kelulusan menggunakan kunci unik yang baru
+          const allPrevGamesPassed = prevLevelGames.every(prevGame => {
+            const uniqueKey = `${prevGame.name}-L${prevGame.level}`;
+            return (highestApprovedScores.get(uniqueKey) || 0) >= PASSING_SCORE;
+          });
+          if (allPrevGamesPassed) {
             isUnlocked = true;
           }
         }
       }
 
       if (isUnlocked) {
+        const uniqueKey = `${game.name}-L${game.level}`;
         unlockedGames.push({
           id: game.id,
           name: `Level ${game.level}: ${game.name}`,
-          score: highestApprovedScores.get(game.name) || 0,
+          score: highestApprovedScores.get(uniqueKey) || 0,
           maxScore: 10,
           link: game.link,
         });
@@ -165,7 +170,8 @@ export function StudentDashboard({
 
   const calculatedStats = useMemo(() => {
     const approvedSubmissions = submissions.filter(s => s.status === 'graded' || s.status === 'approved');
-    const count = new Set(approvedSubmissions.map(s => s.game)).size;
+    const count = new Set(approvedSubmissions.map(s => `${s.game}-L${s.level}`)).size;
+    
     if (count === 0) {
       return {
         highestScore: 0,
@@ -173,11 +179,23 @@ export function StudentDashboard({
         level: "Pemula",
       };
     }
+    
     const maxScore = Math.max(...approvedSubmissions.map((sub) => sub.score), 0);
+    
+    const highestLevelCompleted = Math.max(0, ...approvedSubmissions.map(s => s.level));
+
+    let levelText = "Pemula";
+    if (highestLevelCompleted >= 2) {
+        levelText = "Menengah";
+    }
+    if (highestLevelCompleted >= 3) {
+        levelText = "Mahir";
+    }
+
     return {
       highestScore: maxScore,
       submissionCount: count,
-      level: "Menengah",
+      level: levelText,
     };
   }, [submissions]);
 

@@ -16,13 +16,20 @@ import {
 } from "./ui/dialog";
 import {
   Gamepad2, Upload, CheckCircle,
-  AlertCircle, Brain, Eye, Plus, Edit,
-  Trophy, PlayCircle, Loader2, FileImage,
+  AlertCircle, Brain, Eye, Plus,
+  Trophy, PlayCircle, Loader2,
   Check, X,
   BookOpen,
   Award,
   Mail
 } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { db } from "../lib/firebase";
 import {
@@ -86,9 +93,12 @@ const StudentGamesView = ({ user, games, isLoadingGames }: StudentGamesViewProps
   const highestApprovedScores = useMemo(() => {
     const scoreMap = new Map<string, number>();
     submissions.filter(sub => sub.status === 'graded' || sub.status === 'approved').forEach(sub => {
-        const existingScore = scoreMap.get(sub.game) || 0;
-        if (sub.score > existingScore) scoreMap.set(sub.game, sub.score);
-      });
+      const uniqueKey = `${sub.game}-L${sub.level}`;
+      const existingScore = scoreMap.get(uniqueKey) || 0;
+      if (sub.score > existingScore) {
+        scoreMap.set(uniqueKey, sub.score);
+      }
+    });
     return scoreMap;
   }, [submissions]);
 
@@ -102,29 +112,25 @@ const StudentGamesView = ({ user, games, isLoadingGames }: StudentGamesViewProps
           {games.map((game) => {
             const displayLevel = !isNaN(game.level) ? game.level : 'N/A';
             let isLocked = false;
-            
-            // --- LOGIKA UTAMA DIPERBAIKI DI SINI ---
+
             if (game.level > 1) {
               const PASSING_SCORE = 7;
-              // 1. Ambil SEMUA game di level sebelumnya
               const prevLevelGames = games.filter(g => g.level === game.level - 1);
 
-              // 2. Jika tidak ada game di level sebelumnya, kunci level ini (sebagai pengaman)
               if (prevLevelGames.length === 0) {
                 isLocked = true;
               } else {
-                // 3. Cek apakah SEMUA game di level sebelumnya sudah lulus
-                const allPrevGamesPassed = prevLevelGames.every(prevGame => 
-                  (highestApprovedScores.get(prevGame.name) || 0) >= PASSING_SCORE
-                );
-                
-                // 4. Jika ada satu saja yang belum lulus, kunci level ini
+                const allPrevGamesPassed = prevLevelGames.every(prevGame => {
+                  const uniqueKey = `${prevGame.name}-L${prevGame.level}`;
+                  return (highestApprovedScores.get(uniqueKey) || 0) >= PASSING_SCORE;
+                });
+
                 if (!allPrevGamesPassed) {
                   isLocked = true;
                 }
               }
             }
-            
+
             return (
               <Card key={game.id} className={`transition-all hover:shadow-md ${isLocked ? 'border-gray-300 bg-gray-100' : 'border-2 border-green-600 bg-green-50/30'}`}>
                 <CardContent className={`p-4 flex items-center justify-between ${isLocked ? 'opacity-50' : ''}`}>
@@ -132,36 +138,34 @@ const StudentGamesView = ({ user, games, isLoadingGames }: StudentGamesViewProps
                     <p className={`font-semibold text-base ${isLocked ? 'text-gray-500' : 'text-green-800'}`}>{game.name}</p>
                     <p className="text-sm text-muted-foreground">Level {displayLevel}</p>
                     {game.deadline && (
-                        <p className="text-sm text-muted-foreground">
+                      <p className="text-sm text-muted-foreground">
                         Tenggat: {game.deadline.toDate().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                        </p>
+                      </p>
                     )}
                   </div>
                   <Button onClick={() => !isLocked && window.open(game.link, '_blank')} disabled={isLocked}>
-                    {isLocked ? ( <><X className="w-4 h-4 mr-2" /> Terkunci</> ) : ( <><PlayCircle className="w-4 h-4 mr-2" /> Mulai Level {displayLevel}</> )}
+                    {isLocked ? (<><X className="w-4 h-4 mr-2" /> Terkunci</>) : (<><PlayCircle className="w-4 h-4 mr-2" /> Mulai Level {displayLevel}</>)}
                   </Button>
                 </CardContent>
               </Card>
             );
           })}
         </div>
-      ) : ( <p className="text-center text-muted-foreground py-10">Belum ada game yang ditugaskan.</p> )}
+      ) : (<p className="text-center text-muted-foreground py-10">Belum ada game yang ditugaskan.</p>)}
     </>
   );
 };
 
-
-// ... Sisa file (SubmitScoreForm, GamesSection) tidak perlu diubah ...
-// Saya sertakan kembali secara lengkap untuk memastikan tidak ada yang terlewat.
-
-interface SubmitScoreFormProps { 
-    user: FirebaseUser | null;
-    setShowSubmitForm: (show: boolean) => void;
-    availableGames: ManagedGame[];
+interface SubmitScoreFormProps {
+  user: FirebaseUser | null;
+  setShowSubmitForm: (show: boolean) => void;
+  availableGames: ManagedGame[];
 }
 
+// --- PERBAIKAN TYPO DI SINI ---
 const SubmitScoreForm = ({ user, setShowSubmitForm, availableGames }: SubmitScoreFormProps) => {
-  const [selectedGameId, setSelectedGameId] = useState(() => availableGames && availableGames.length > 0 ? availableGames[0].id : ""); 
+// --- AKHIR PERBAIKAN ---
+  const [selectedGameId, setSelectedGameId] = useState(() => availableGames && availableGames.length > 0 ? availableGames[0].id : "");
   const [score, setScore] = useState("");
   const [note, setNote] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -171,12 +175,12 @@ const SubmitScoreForm = ({ user, setShowSubmitForm, availableGames }: SubmitScor
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
-      if (availableGames && availableGames.length > 0) {
-          const currentSelectionStillExists = availableGames.some(g => g.id === selectedGameId);
-          if (!selectedGameId || !currentSelectionStillExists) {
-              setSelectedGameId(availableGames[0].id);
-          }
+    if (availableGames && availableGames.length > 0) {
+      const currentSelectionStillExists = availableGames.some(g => g.id === selectedGameId);
+      if (!selectedGameId || !currentSelectionStillExists) {
+        setSelectedGameId(availableGames[0].id);
       }
+    }
   }, [availableGames, selectedGameId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,16 +229,16 @@ const SubmitScoreForm = ({ user, setShowSubmitForm, availableGames }: SubmitScor
       setIsSubmitting(false);
     }
   };
-  
+
   if (successMessage) {
     return (
-        <Card className="border-green-500">
-            <CardHeader><CardTitle className="text-green-700 flex items-center"><CheckCircle className="w-5 h-5 mr-2" /> Berhasil!</CardTitle></CardHeader>
-            <CardContent>
-                <p className="text-sm italic">{successMessage}</p>
-                <Button variant="outline" onClick={() => setShowSubmitForm(false)} className="mt-4">Tutup</Button>
-            </CardContent>
-        </Card>
+      <Card className="border-green-500">
+        <CardHeader><CardTitle className="text-green-700 flex items-center"><CheckCircle className="w-5 h-5 mr-2" /> Berhasil!</CardTitle></CardHeader>
+        <CardContent>
+          <p className="text-sm italic">{successMessage}</p>
+          <Button variant="outline" onClick={() => setShowSubmitForm(false)} className="mt-4">Tutup</Button>
+        </CardContent>
+      </Card>
     );
   }
 
@@ -242,65 +246,66 @@ const SubmitScoreForm = ({ user, setShowSubmitForm, availableGames }: SubmitScor
     <Card className="border-primary">
       <form onSubmit={handleSubmit}>
         <CardHeader>
-            <CardTitle className="flex items-center text-lg font-medium">Submit Nilai Game</CardTitle>
-            <CardDescription>Pilih game yang sudah Anda selesaikan dan upload buktinya.</CardDescription>
+          <CardTitle className="flex items-center text-lg font-medium">Submit Nilai Game</CardTitle>
+          <CardDescription>Pilih game yang sudah Anda selesaikan dan upload buktinya.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <Label htmlFor="game-select">Pilih Game/Level</Label>
-                    <select 
-                      id="game-select" 
-                      className="w-full p-2 border rounded-md bg-input mt-1" 
-                      value={selectedGameId} 
-                      onChange={(e) => setSelectedGameId(e.target.value)}
-                    >
-                        {availableGames.map((g) => (
-                            <option key={g.id} value={g.id}>{`Level ${g.level}: ${g.name}`}</option>
-                        ))}
-                    </select>
-                </div>
-                <div>
-                    <Label htmlFor="score-input">Skor Anda (1-10)</Label>
-                    <Input id="score-input" placeholder="Contoh: 8" type="number" max="10" min="1" value={score} onChange={(e) => setScore(e.target.value)} required className="mt-1" />
-                </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Select value={selectedGameId} onValueChange={setSelectedGameId}>
+                <SelectTrigger className="w-full mt-1">
+                  <SelectValue placeholder="Pilih game atau level..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableGames.map((g) => (
+                    <SelectItem key={g.id} value={g.id}>
+                      {`Level ${g.level}: ${g.name}`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
-                <Label htmlFor="note-input">Catatan Pengalaman (Opsional)</Label>
-                <Textarea id="note-input" placeholder="Ceritakan pengalamanmu saat bermain game ini..." value={note} onChange={(e) => setNote(e.target.value)} className="mt-1"/>
+              <Label htmlFor="score-input">Skor Anda (1-10)</Label>
+              <Input id="score-input" placeholder="Contoh: 8" type="number" max="10" min="1" value={score} onChange={(e) => setScore(e.target.value)} required className="mt-1" />
             </div>
-            <div>
-                <Label htmlFor="file-upload">Upload Screenshot Skor (Wajib)</Label>
-                <div className="mt-1">
-                    {previewUrl ? (
-                        <div className="relative border rounded-lg overflow-hidden aspect-video">
-                            <img src={previewUrl} alt="Preview screenshot" className="w-full h-full object-cover" />
-                            <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7"
-                                onClick={() => {
-                                    setPreviewUrl(null); setFile(null);
-                                    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
-                                    if (fileInput) fileInput.value = "";
-                                }}>
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    ) : (
-                        <label htmlFor="file-upload" className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer block">
-                            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                            <p className="text-sm text-muted-foreground">Klik atau seret file ke sini</p>
-                        </label>
-                    )}
+          </div>
+          <div>
+            <Label htmlFor="note-input">Catatan Pengalaman (Opsional)</Label>
+            <Textarea id="note-input" placeholder="Ceritakan pengalamanmu saat bermain game ini..." value={note} onChange={(e) => setNote(e.target.value)} className="mt-1" />
+          </div>
+          <div>
+            <Label htmlFor="file-upload">Upload Screenshot Skor (Wajib)</Label>
+            <div className="mt-1">
+              {previewUrl ? (
+                <div className="relative border rounded-lg overflow-hidden aspect-video">
+                  <img src={previewUrl} alt="Preview screenshot" className="w-full h-full object-cover" />
+                  <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7"
+                    onClick={() => {
+                      setPreviewUrl(null); setFile(null);
+                      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+                      if (fileInput) fileInput.value = "";
+                    }}>
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
-                <input id="file-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/jpg" onChange={handleFileChange} required />
+              ) : (
+                <label htmlFor="file-upload" className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer block">
+                  <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-sm text-muted-foreground">Klik atau seret file ke sini</p>
+                </label>
+              )}
             </div>
-            {error && (<div className="text-sm text-destructive flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>)}
-            <div className="flex gap-3 pt-2">
-                <Button type="submit" className="flex-1" disabled={isSubmitting}>
-                    {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-                    {isSubmitting ? "Mengirim..." : "Kirim Nilai"}
-                </Button>
-                <Button variant="outline" type="button" onClick={() => setShowSubmitForm(false)} disabled={isSubmitting}>Batal</Button>
-            </div>
+            <input id="file-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/jpg" onChange={handleFileChange} required />
+          </div>
+          {error && (<div className="text-sm text-destructive flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>)}
+          <div className="flex gap-3 pt-2">
+            <Button type="submit" className="flex-1" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+              {isSubmitting ? "Mengirim..." : "Kirim Nilai"}
+            </Button>
+            <Button variant="outline" type="button" onClick={() => setShowSubmitForm(false)} disabled={isSubmitting}>Batal</Button>
+          </div>
         </CardContent>
       </form>
     </Card>
@@ -329,11 +334,11 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
       setIsLoadingGames(false);
     });
     if (!user) {
-        setIsLoadingSubmissions(false);
-        setIsLoadingUsers(false);
-        return () => unsubscribeGames();
+      setIsLoadingSubmissions(false);
+      setIsLoadingUsers(false);
+      return () => unsubscribeGames();
     };
-    
+
     setIsLoadingSubmissions(true);
     const submissionsCol = collection(db, "gameSubmissions");
     const q = userRole === 'teacher'
@@ -355,9 +360,9 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
         setIsLoadingUsers(false);
       });
     } else {
-        setIsLoadingUsers(false);
+      setIsLoadingUsers(false);
     }
-    
+
     return () => {
       unsubscribeGames();
       unsubscribeSubmissions();
@@ -370,28 +375,31 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
     const PASSING_SCORE = 7;
     const highestApprovedScores = new Map<string, number>();
     submissions
-        .filter(sub => sub.status === 'graded' || sub.status === 'approved')
-        .forEach(sub => {
-            const existingScore = highestApprovedScores.get(sub.game) || 0;
-            if (sub.score > existingScore) highestApprovedScores.set(sub.game, sub.score);
-        });
+      .filter(sub => sub.status === 'graded' || sub.status === 'approved')
+      .forEach(sub => {
+        const uniqueKey = `${sub.game}-L${sub.level}`;
+        const existingScore = highestApprovedScores.get(uniqueKey) || 0;
+        if (sub.score > existingScore) {
+          highestApprovedScores.set(uniqueKey, sub.score);
+        }
+      });
+
     const result: ManagedGame[] = [];
     for (const game of managedGames) {
-        if (game.level === 1) {
-            result.push(game);
-            continue;
+      if (game.level === 1) {
+        result.push(game);
+        continue;
+      }
+      const prevLevelGames = managedGames.filter(g => g.level === game.level - 1);
+      if (prevLevelGames.length > 0) {
+        const allPrevGamesPassed = prevLevelGames.every(prevGame => {
+          const uniqueKey = `${prevGame.name}-L${prevGame.level}`;
+          return (highestApprovedScores.get(uniqueKey) || 0) >= PASSING_SCORE;
+        });
+        if (allPrevGamesPassed) {
+          result.push(game);
         }
-        const prevLevelGames = managedGames.filter(g => g.level === game.level - 1);
-        if (prevLevelGames.length > 0) {
-            const allPrevGamesPassed = prevLevelGames.every(prevGame => 
-                (highestApprovedScores.get(prevGame.name) || 0) >= PASSING_SCORE
-            );
-            if (allPrevGamesPassed) {
-                result.push(game);
-            } else {
-                break;
-            }
-        }
+      }
     }
     return result;
   }, [managedGames, submissions, userRole]);
@@ -466,8 +474,8 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
     }
   };
 
-  const isLoadingData = userRole === 'teacher' 
-    ? isLoadingSubmissions || isLoadingUsers 
+  const isLoadingData = userRole === 'teacher'
+    ? isLoadingSubmissions || isLoadingUsers
     : isLoadingSubmissions;
 
   return (
@@ -537,20 +545,16 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
           {reviewingSubmission && (
             <>
               <DialogHeader className="p-6 border-b">
-                <DialogTitle className="font-bold text-xl">Review Kiriman: {reviewingSubmission.game}</DialogTitle>
+                <DialogTitle className="font-bold text-3xl">Game {reviewingSubmission.game}</DialogTitle>
                 <DialogDescription className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 text-sm">
-                  <span className="font-medium text-base text-foreground">
+                  <span className="font-medium text-xl mr-2">
                     {userInfoMap.get(reviewingSubmission.userId)?.name || reviewingSubmission.studentName}
                   </span>
-                  <span className="flex items-center text-muted-foreground">
-                    <Mail className="w-3 h-3 mr-1.5" />
-                    {userInfoMap.get(reviewingSubmission.userId)?.email || 'email tidak tersedia'}
+                  <span className="flex items-center text-lg mr-2 mt-1">
+                    Level {reviewingSubmission.level || 'N/A'}
                   </span>
-                  <span className="flex items-center text-muted-foreground">
-                    Level: {reviewingSubmission.level || 'N/A'}
-                  </span>
-                  <span className="flex items-center text-muted-foreground">
-                    Skor Awal: {reviewingSubmission.score}
+                  <span className="flex items-center text-lg mr-2 mt-1">
+                    Skor Awal {reviewingSubmission.score}
                   </span>
                   {getStatusBadge(reviewingSubmission.status)}
                 </DialogDescription>
