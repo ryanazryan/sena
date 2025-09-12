@@ -257,8 +257,8 @@ export function TeacherDashboard({ user, userProfile, onSectionChange }: Teacher
     <div className="max-w-8xl mx-auto px-6 sm:px-6 lg:px-8 py-2 space-y-8">
       <div className="flex items-center justify-between px-4">
         <div>
-          <h1 className="text-3xl font-bold">Dashboard Guru</h1>
-          <p className="text-gray-600">Selamat datang, {userProfile.namaLengkap}!</p>
+          <h1 className="text-3xl font-bold mt-2">Dashboard Guru</h1>
+          <p className="text-gray-800 text-lg">Selamat datang, {userProfile.namaLengkap}</p>
         </div>
       </div>
 

@@ -1,6 +1,6 @@
 // File: src/components/StudentDashboard.tsx
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { User as FirebaseUser } from "firebase/auth";
 import { UserProfile } from "../lib/auth";
 import { db } from "../lib/firebase";
@@ -13,9 +13,21 @@ import {
   Timestamp,
 } from "firebase/firestore";
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "../components/ui/card";
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+} from "../components/ui/carousel";
+import Autoplay from "embla-carousel-autoplay";
 import { Button } from "../components/ui/button";
-import { Progress } from "../components/ui/progress"; // --- BARU: Impor Progress ---
+import { Progress } from "../components/ui/progress";
 import {
   Trophy,
   Brain,
@@ -26,6 +38,12 @@ import {
 } from "lucide-react";
 import { ScoreEntry } from "../App";
 import { Calendar } from "../components/ui/calendar";
+
+import image1 from "../assets/level_1.png";
+import image2 from "../assets/level_2.png";
+import image3 from "../assets/level_3.png";
+
+const carouselImages = [image1, image2, image3];
 
 interface StudentDashboardProps {
   user: FirebaseUser;
@@ -40,6 +58,7 @@ type ManagedGame = {
   deadline?: Timestamp;
 };
 
+
 export function StudentDashboard({
   user,
   userProfile,
@@ -48,6 +67,10 @@ export function StudentDashboard({
   const [date, setDate] = useState<Date | undefined>(new Date());
   const [submissions, setSubmissions] = useState<ScoreEntry[]>([]);
   const [managedGames, setManagedGames] = useState<ManagedGame[]>([]);
+
+  const plugin = useRef(
+    Autoplay({ delay: 3000, stopOnInteraction: true })
+  );
 
   useEffect(() => {
     if (!user) return;
@@ -67,16 +90,16 @@ export function StudentDashboard({
 
     const gamesQuery = query(collection(db, "managedGames"), orderBy("stage", "asc"));
     const unsubscribeGames = onSnapshot(gamesQuery, (snapshot) => {
-        const gamesData = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        })) as ManagedGame[];
-        setManagedGames(gamesData);
+      const gamesData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as ManagedGame[];
+      setManagedGames(gamesData);
     });
 
     return () => {
-        unsubscribeSubs();
-        unsubscribeGames();
+      unsubscribeSubs();
+      unsubscribeGames();
     };
   }, [user]);
 
@@ -86,32 +109,28 @@ export function StudentDashboard({
       .map(game => game.deadline!.toDate());
   }, [managedGames]);
 
-  // --- LOGIKA BARU: Menyiapkan data untuk diagram progres ---
   const levelProgress = useMemo(() => {
-    // Cari skor tertinggi untuk setiap game yang sudah dinilai/disetujui
     const highestApprovedScores = new Map<string, number>();
     submissions
-        .filter(sub => sub.status === 'graded' || sub.status === 'approved')
-        .forEach(sub => {
-            const existingScore = highestApprovedScores.get(sub.game) || 0;
-            if (sub.score > existingScore) {
-                highestApprovedScores.set(sub.game, sub.score);
-            }
-        });
+      .filter(sub => sub.status === 'graded' || sub.status === 'approved')
+      .forEach(sub => {
+        const existingScore = highestApprovedScores.get(sub.game) || 0;
+        if (sub.score > existingScore) {
+          highestApprovedScores.set(sub.game, sub.score);
+        }
+      });
 
-    // Petakan data game dengan skor tertinggi
     return managedGames.map(game => ({
-        id: game.id,
-        name: `Level ${game.stage}: ${game.name}`,
-        score: highestApprovedScores.get(game.name) || 0,
-        maxScore: 10,
+      id: game.id,
+      name: `Level ${game.stage}: ${game.name}`,
+      score: highestApprovedScores.get(game.name) || 0,
+      maxScore: 10,
     }));
   }, [submissions, managedGames]);
-  // --- SELESAI ---
 
   const calculatedStats = useMemo(() => {
     const approvedSubmissions = submissions.filter(s => s.status === 'graded' || s.status === 'approved');
-    const count = new Set(approvedSubmissions.map(s => s.game)).size; // Hitung game unik
+    const count = new Set(approvedSubmissions.map(s => s.game)).size;
     if (count === 0) {
       return {
         highestScore: 0,
@@ -123,7 +142,7 @@ export function StudentDashboard({
     return {
       highestScore: maxScore,
       submissionCount: count,
-      level: "Menengah", // Placeholder
+      level: "Menengah",
     };
   }, [submissions]);
 
@@ -135,7 +154,7 @@ export function StudentDashboard({
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="max-w-7xl mx-auto px-6 sm:px-6 lg:px-8 py-8 space-y-8">
       <div className="flex items-center justify-center md:justify-start text-center md:text-left">
         <div>
           <h1 className="text-3xl font-bold text-foreground">
@@ -148,7 +167,6 @@ export function StudentDashboard({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* --- KARTU PROGRES DIGANTI DENGAN DIAGRAM --- */}
         <Card className="md:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center">Progres Pembelajaran</CardTitle>
@@ -176,43 +194,74 @@ export function StudentDashboard({
         </Card>
 
         <div className="flex justify-center items-center">
-            <Calendar
-                mode="single"
-                selected={date}
-                onSelect={setDate}
-                className="rounded-md border"
-                classNames={{
-                    cell: "h-16 w-16 text-center text-sm p-0",
-                    day: "h-12 w-12",
-                    head_cell: "w-12 font-normal text-sm",
-                    caption_label: "text-lg font-medium",
-                }}
-                modifiers={{ deadline: deadlines }}
-                modifiersClassNames={{
-                  deadline: "deadline-dot",
-                }}
-            />
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={setDate}
+            className="rounded-md border"
+            classNames={{
+              cell: "h-16 w-16 text-center text-sm p-0",
+              day: "h-12 w-12",
+              head_cell: "w-12 font-normal text-sm",
+              caption_label: "text-lg font-medium",
+            }}
+            modifiers={{ deadline: deadlines }}
+            modifiersClassNames={{
+              deadline: "deadline-dot",
+            }}
+          />
         </div>
 
-        <div className="grid grid-cols-1 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Bermain Game</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center">
-              <PlayCircle className="w-12 h-12 text-primary mb-4" />
-              <Button onClick={() => onSectionChange("games")} className="w-full">
-                Mulai Petualangan
-              </Button>
-            </CardContent>
-          </Card>
 
-          <Card>
+        <div className="grid grid-cols-1 gap-6">
+          <Carousel
+            plugins={[plugin.current]}
+            opts={{ loop: true }}
+            className="w-full"
+            onMouseEnter={() => plugin.current.stop()}
+            onMouseLeave={() => plugin.current.reset()}
+          >
+            <CarouselContent>
+              {carouselImages.map((imgSrc, index) => (
+                <CarouselItem key={index}>
+                  <div
+                    className="relative rounded-lg overflow-hidden flex items-center justify-center h-full p-1 min-h-[160px] md:min-h-[180px]"
+                    style={{
+                      backgroundImage: `url(${imgSrc})`,
+                      backgroundSize: "cover",
+                      backgroundPosition: "center",
+                    }}
+                  >
+                    <div className="absolute inset-0 bg-black/40" />
+                    <Card className="w-full bg-transparent border-none text-white text-center">
+                      <CardHeader className="p-4 pb-2">
+                        <CardTitle className="text-lg md:text-xl"></CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex flex-col items-center justify-center p-4 pt-2 mt-6">
+                        <PlayCircle className="w-10 h-10 md:w-12 md:h-12 text-white mb-3" />
+                        <Button
+                          onClick={() => onSectionChange("games")}
+                          className="w-full"
+                          variant="secondary"
+                          size="sm"
+                        >
+                          Mulai Petualangan
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+          </Carousel>
+
+          {/* --- KARTU BUKU PANDUAN --- */}
+          <Card className="flex flex-col h-full">
             <CardHeader>
               <CardTitle>Buku Panduan</CardTitle>
             </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center">
-              <FileText className="w-12 h-12 text-blue-600 mb-4" />
+            <CardContent className="flex flex-col items-center justify-center flex-1">
+              <FileText className="w-10 h-10 md:w-12 md:h-12 text-blue-600 mb-4" />
               <Button asChild variant="outline" className="w-full">
                 <a href="/BUKU PANDUAN PENGGUNAAN MEDIA.pdf" download="Panduan Belajar SENA.pdf">
                   Unduh Panduan

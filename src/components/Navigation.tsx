@@ -28,7 +28,7 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
   const menuItems = [
     { id: 'home', label: 'Dasbor', icon: Home },
     { id: 'games', label: 'Permainan', icon: Gamepad2 },
-    { id: 'aboutus', label: 'Tentang Kami', icon: BookOpen },
+    // { id: 'aboutus', label: 'Tentang Kami', icon: BookOpen },
   ];
 
   const userRole = userProfile?.peran;
@@ -41,13 +41,19 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
 
   const handleSectionChange = (section: string) => {
     onSectionChange(section);
-    setIsMobileMenuOpen(false);
+    setIsMobileMenuOpen(false); 
+  };
+  
+  const handleMobileLogout = () => {
+    onLogout();
+    setIsMobileMenuOpen(false); // Pastikan menu tertutup setelah logout
   };
 
   return (
     <nav className="bg-card border-b border-border sticky top-0 z-50">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
+          {/* Bagian Logo dan Judul */}
           <div className="flex items-center space-x-3">
             <img src={logo} alt="SENA Logo" className="w-16 h-16" />
             <div>
@@ -62,6 +68,7 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
             )}
           </div>
 
+          {/* Bagian Menu Desktop dan Profil */}
           <div className="flex items-center space-x-2">
             <div className="hidden md:flex space-x-1">
               {menuItems.map((item) => (
@@ -72,6 +79,7 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
               ))}
             </div>
 
+            {/* Dropdown Profil (tetap sama) */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
@@ -89,6 +97,7 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
               </DropdownMenuContent>
             </DropdownMenu>
 
+            {/* Tombol Menu Mobile */}
             <div className="md:hidden">
               <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
                 <SheetTrigger asChild>
@@ -97,16 +106,18 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
                     <span className="sr-only">Buka menu</span>
                   </Button>
                 </SheetTrigger>
-                {/* --- Perubahan di sini --- */}
+                
+                {/* --- KONTEN MENU MOBILE YANG DIPERBARUI --- */}
                 <SheetContent side="left" className="flex flex-col w-4/5 p-0 sm:max-w-xs">
+                  {/* Header */}
                   <div className="flex items-center space-x-3 p-4 border-b">
                     <img src={logo} alt="SENA Logo" className="w-12 h-12" />
                     <div>
                       <h2 className="text-lg font-semibold text-foreground">SENA App</h2>
-                      <p className="text-xs text-muted-foreground">Navigasi Utama</p>
                     </div>
                   </div>
 
+                  {/* Navigasi Utama */}
                   <div className="flex-grow p-4">
                     <div className="flex flex-col space-y-2">
                       {menuItems.map((item) => (
@@ -114,7 +125,7 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
                           <Button
                             variant={activeSection === item.id ? "secondary" : "ghost"}
                             onClick={() => handleSectionChange(item.id)}
-                            className="w-full justify-start text-md py-6 rounded-lg transition-all duration-200"
+                            className="w-full justify-start text-md py-6 rounded-lg"
                           >
                             <item.icon className="mr-4 h-5 w-5 text-primary" />
                             {item.label}
@@ -124,10 +135,18 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
                     </div>
                   </div>
 
-                  <div className="p-4 border-t text-center">
-                    <p className="text-xs text-muted-foreground">
-                      &copy; {new Date().getFullYear()} SENA | Belajar Jadi Seru
-                    </p>
+                  {/* Bagian Footer dengan Tombol Logout */}
+                  <div className="mt-auto p-4 border-t">
+                     <SheetClose asChild>
+                        <Button
+                          variant="ghost"
+                          onClick={handleMobileLogout} 
+                          className="w-full justify-start text-md py-6 rounded-lg text-red-500 hover:text-red-600"
+                        >
+                          <LogOut className="mr-4 h-5 w-5" />
+                          Keluar
+                        </Button>
+                     </SheetClose>
                   </div>
                 </SheetContent>
               </Sheet>

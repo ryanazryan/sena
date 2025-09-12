@@ -144,6 +144,7 @@ export function RegisterPage({ onBack, onShowLogin, onRegisterSuccess }: Registe
                     <SelectItem value="Kelas 8A">Kelas 8A</SelectItem>
                     <SelectItem value="Kelas 8B">Kelas 8B</SelectItem>
                     <SelectItem value="Kelas 9A">Kelas 9A</SelectItem>
+                    <SelectItem value="Kelas 9B">Kelas 9B</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
