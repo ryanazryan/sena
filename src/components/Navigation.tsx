@@ -10,7 +10,7 @@ import {
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from "./ui/sheet";
 import { Button } from "./ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { LogOut, User, UserCheck, Home, Gamepad2, BookOpen, Menu } from "lucide-react";
+import { LogOut, User, UserCheck, Home, Gamepad2, Menu } from "lucide-react";
 import { UserProfile } from "../lib/auth";
 import { Badge } from "./ui/badge";
 import logo from "../assets/logo.png";
@@ -28,7 +28,6 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
   const menuItems = [
     { id: 'home', label: 'Dasbor', icon: Home },
     { id: 'games', label: 'Permainan', icon: Gamepad2 },
-    // { id: 'aboutus', label: 'Tentang Kami', icon: BookOpen },
   ];
 
   const userRole = userProfile?.peran;
@@ -46,15 +45,19 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
   
   const handleMobileLogout = () => {
     onLogout();
-    setIsMobileMenuOpen(false); // Pastikan menu tertutup setelah logout
+    setIsMobileMenuOpen(false);
   };
 
   return (
     <nav className="bg-card border-b border-border sticky top-0 z-50">
       <div className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Bagian Logo dan Judul */}
-          <div className="flex items-center space-x-3">
+          
+          {/* Bagian Logo dan Judul (Bisa Diklik) */}
+          <div 
+            className="flex items-center space-x-3 cursor-pointer"
+            onClick={() => onSectionChange('home')}
+          >
             <img src={logo} alt="SENA Logo" className="w-16 h-16" />
             <div>
               <h1 className="text-xl font-semibold text-foreground">SENA</h1>
@@ -79,7 +82,6 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
               ))}
             </div>
 
-            {/* Dropdown Profil (tetap sama) */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
@@ -107,17 +109,13 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
                   </Button>
                 </SheetTrigger>
                 
-                {/* --- KONTEN MENU MOBILE YANG DIPERBARUI --- */}
                 <SheetContent side="left" className="flex flex-col w-4/5 p-0 sm:max-w-xs">
-                  {/* Header */}
                   <div className="flex items-center space-x-3 p-4 border-b">
                     <img src={logo} alt="SENA Logo" className="w-12 h-12" />
                     <div>
                       <h2 className="text-lg font-semibold text-foreground">SENA App</h2>
                     </div>
                   </div>
-
-                  {/* Navigasi Utama */}
                   <div className="flex-grow p-4">
                     <div className="flex flex-col space-y-2">
                       {menuItems.map((item) => (
@@ -134,8 +132,6 @@ export function Navigation({ activeSection, onSectionChange, onLogout, userProfi
                       ))}
                     </div>
                   </div>
-
-                  {/* Bagian Footer dengan Tombol Logout */}
                   <div className="mt-auto p-4 border-t">
                      <SheetClose asChild>
                         <Button

@@ -16,7 +16,7 @@ type ManagedGame = {
   name: string;
   link: string;
   deadline: Timestamp;
-  stage: number;
+  level: number; 
 };
 
 export const TeacherGamesView = () => {
@@ -26,7 +26,7 @@ export const TeacherGamesView = () => {
   const [gameName, setGameName] = useState("");
   const [gameLink, setGameLink] = useState("");
   const [deadline, setDeadline] = useState("");
-  const [stage, setStage] = useState("1");
+  const [level, setLevel] = useState("1"); 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -36,11 +36,11 @@ export const TeacherGamesView = () => {
   const [editName, setEditName] = useState("");
   const [editLink, setEditLink] = useState("");
   const [editDeadline, setEditDeadline] = useState("");
-  const [editStage, setEditStage] = useState("1");
+  const [editLevel, setEditLevel] = useState("1");
 
   useEffect(() => {
     const gamesCollection = collection(db, "managedGames");
-    const q = query(gamesCollection, orderBy("stage", "asc"));
+    const q = query(gamesCollection, orderBy("level", "asc")); 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ManagedGame));
       setGames(gamesData);
@@ -54,13 +54,13 @@ export const TeacherGamesView = () => {
       setEditName(editingGame.name);
       setEditLink(editingGame.link);
       setEditDeadline(editingGame.deadline.toDate().toISOString().split('T')[0]);
-      setEditStage(String(editingGame.stage));
+      setEditLevel(String(editingGame.level)); // Diubah dari stage
     }
   }, [editingGame]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!gameName || !gameLink || !deadline || !stage) {
+    if (!gameName || !gameLink || !deadline || !level) {
       setError("Semua field wajib diisi.");
       return;
     }
@@ -72,14 +72,14 @@ export const TeacherGamesView = () => {
         name: gameName,
         link: gameLink,
         deadline: Timestamp.fromDate(new Date(deadline)),
-        stage: parseInt(stage),
+        level: parseInt(level, 10),
         createdAt: Timestamp.now()
       });
       setSuccess("Game baru berhasil ditambahkan!");
       setGameName("");
       setGameLink("");
       setDeadline("");
-      setStage("1");
+      setLevel("1");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
       setError("Gagal menambahkan game.");
@@ -98,7 +98,7 @@ export const TeacherGamesView = () => {
         name: editName,
         link: editLink,
         deadline: Timestamp.fromDate(new Date(editDeadline)),
-        stage: parseInt(editStage),
+        level: parseInt(editLevel, 10),
       });
       setEditingGame(null);
     } catch (err) {
@@ -123,7 +123,7 @@ export const TeacherGamesView = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center"><Plus className="w-5 h-5 mr-2" /> Tambah Game Baru</CardTitle>
-          <CardDescription>Tambahkan link game, atur deadline, dan pilih stage untuk siswa.</CardDescription>
+          <CardDescription>Tambahkan link game, atur deadline, dan pilih level untuk siswa.</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -135,36 +135,25 @@ export const TeacherGamesView = () => {
               <Label htmlFor="gameLink">Link Game</Label>
               <Input id="gameLink" type="url" value={gameLink} onChange={e => setGameLink(e.target.value)} placeholder="https://contohgame.com/main" />
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
-
-              {/* Kolom 1: Deadline */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="deadline">Deadline</Label>
-                <Input
-                  id="deadline"
-                  type="date"
-                  value={deadline}
-                  onChange={e => setDeadline(e.target.value)}
-                  className="text-center"
-                />
+                <Input id="deadline" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} className="w-full" />
               </div>
-
               <div className="space-y-2">
-                <Label htmlFor="stage">Pilih Stage</Label>
-                <Select value={stage} onValueChange={setStage}>
-                  <SelectTrigger id="stage" className="w-full">
-                    <SelectValue placeholder="Pilih Stage" />
+                <Label htmlFor="level">Pilih Level</Label>
+                <Select value={level} onValueChange={setLevel}>
+                  <SelectTrigger id="level" className="w-full">
+                    <SelectValue placeholder="Pilih Level" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Stage 1">Stage 1</SelectItem>
-                    <SelectItem value="Stage 2">Stage 2</SelectItem>
-                    <SelectItem value="Stage 3">Stage 3</SelectItem>
+                    <SelectItem value="1">Level 1</SelectItem>
+                    <SelectItem value="2">Level 2</SelectItem>
+                    <SelectItem value="3">Level 3</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-
             </div>
-
             {error && <p className="text-sm text-destructive">{error}</p>}
             {success && <p className="text-sm text-green-600">{success}</p>}
             <Button type="submit" disabled={isSubmitting}>
@@ -182,9 +171,9 @@ export const TeacherGamesView = () => {
             : games.length > 0 ? (
               <div className="space-y-2">
                 {games.map(game => (
-                  <div key={game.id} className="flex items-center justify-between p-3 border rounded-lg gap-2">
-                    <div className="flex items-center gap-4">
-                      <Badge variant="secondary">Stage {game.stage}</Badge>
+                  <div key={game.id} className="flex items-center justify-between p-3 border rounded-lg gap-2 flex-wrap">
+                    <div className="flex items-center gap-4 flex-grow min-w-0">
+                      <Badge variant="secondary">Level {game.level}</Badge>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold truncate">{game.name}</p>
                         <a href={game.link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 truncate">
@@ -208,7 +197,7 @@ export const TeacherGamesView = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Ubah Detail Game</DialogTitle>
-            <DialogDescription>Perbarui nama, link, deadline, atau stage untuk game ini.</DialogDescription>
+            <DialogDescription>Perbarui nama, link, deadline, atau level untuk game ini.</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleUpdate} className="space-y-4 py-4">
             <div className="space-y-2">
@@ -225,12 +214,17 @@ export const TeacherGamesView = () => {
                 <Input id="editDeadline" type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="editStage">Pilih Stage</Label>
-                <select id="editStage" value={editStage} onChange={e => setEditStage(e.target.value)} className="w-full h-10 p-2 border rounded-lg bg-input mt-1">
-                  <option value="1">Stage 1</option>
-                  <option value="2">Stage 2</option>
-                  <option value="3">Stage 3</option>
-                </select>
+                <Label htmlFor="editLevel">Pilih Level</Label>
+                <Select value={editLevel} onValueChange={setEditLevel}>
+                  <SelectTrigger id="editLevel" className="w-full">
+                    <SelectValue placeholder="Pilih Level" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="1">Level 1</SelectItem>
+                    <SelectItem value="2">Level 2</SelectItem>
+                    <SelectItem value="3">Level 3</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <DialogFooter>
@@ -243,13 +237,13 @@ export const TeacherGamesView = () => {
           </form>
         </DialogContent>
       </Dialog>
-
+      
       <AlertDialog open={!!gameToDelete} onOpenChange={(open) => !open && setGameToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Anda Yakin?</AlertDialogTitle>
             <AlertDialogDescription>
-              Tindakan ini tidak dapat dibatalkan. Ini akan menghapus game "{gameToDelete?.name}" secara permanen.
+              Tindakan ini akan menghapus game "{gameToDelete?.name}" secara permanen.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

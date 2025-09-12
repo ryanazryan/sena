@@ -16,11 +16,12 @@ import {
 } from "./ui/dialog";
 import {
   Gamepad2, Upload, CheckCircle,
-  AlertCircle, Brain, Eye, Send, Plus, Edit,
-  Trophy, Target, PlayCircle, Loader2, FileImage,
-  Check, X, Calendar,
+  AlertCircle, Brain, Eye, Plus, Edit,
+  Trophy, PlayCircle, Loader2, FileImage,
+  Check, X,
   BookOpen,
-  Award
+  Award,
+  Mail
 } from "lucide-react";
 import { ImageWithFallback } from "./figma/ImageWithFallback";
 import { db } from "../lib/firebase";
@@ -43,6 +44,7 @@ export type ScoreEntry = {
   userId: string;
   studentName?: string;
   game: string;
+  level: number;
   score: number;
   maxScore: number;
   note?: string;
@@ -59,7 +61,7 @@ type ManagedGame = {
   name: string;
   link: string;
   deadline: Timestamp;
-  stage: number;
+  level: number;
 };
 
 interface StudentGamesViewProps {
@@ -70,7 +72,6 @@ interface StudentGamesViewProps {
 
 const StudentGamesView = ({ user, games, isLoadingGames }: StudentGamesViewProps) => {
   const [submissions, setSubmissions] = useState<ScoreEntry[]>([]);
-
   useEffect(() => {
     if (!user) return;
     const submissionsCol = collection(db, "gameSubmissions");
@@ -84,13 +85,9 @@ const StudentGamesView = ({ user, games, isLoadingGames }: StudentGamesViewProps
 
   const highestApprovedScores = useMemo(() => {
     const scoreMap = new Map<string, number>();
-    submissions
-      .filter(sub => sub.status === 'graded' || sub.status === 'approved')
-      .forEach(sub => {
+    submissions.filter(sub => sub.status === 'graded' || sub.status === 'approved').forEach(sub => {
         const existingScore = scoreMap.get(sub.game) || 0;
-        if (sub.score > existingScore) {
-          scoreMap.set(sub.game, sub.score);
-        }
+        if (sub.score > existingScore) scoreMap.set(sub.game, sub.score);
       });
     return scoreMap;
   }, [submissions]);
@@ -99,67 +96,74 @@ const StudentGamesView = ({ user, games, isLoadingGames }: StudentGamesViewProps
     <>
       <h2 className="text-xl font-semibold mb-4">Daftar Game Tersedia</h2>
       {isLoadingGames ? (
-        <div className="flex justify-center items-center h-40">
-          <Loader2 className="w-8 h-8 animate-spin text-primary" />
-        </div>
+        <div className="flex justify-center items-center h-40"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>
       ) : games.length > 0 ? (
         <div className="space-y-4">
-          {games.map((game, index) => {
+          {games.map((game) => {
+            const displayLevel = !isNaN(game.level) ? game.level : 'N/A';
             let isLocked = false;
-            if (index > 0) {
-              const prevGameName = games[index - 1]?.name;
-              const highestPrevScore = highestApprovedScores.get(prevGameName) || 0;
-              if (highestPrevScore < 7) {
+            
+            // --- LOGIKA UTAMA DIPERBAIKI DI SINI ---
+            if (game.level > 1) {
+              const PASSING_SCORE = 7;
+              // 1. Ambil SEMUA game di level sebelumnya
+              const prevLevelGames = games.filter(g => g.level === game.level - 1);
+
+              // 2. Jika tidak ada game di level sebelumnya, kunci level ini (sebagai pengaman)
+              if (prevLevelGames.length === 0) {
                 isLocked = true;
+              } else {
+                // 3. Cek apakah SEMUA game di level sebelumnya sudah lulus
+                const allPrevGamesPassed = prevLevelGames.every(prevGame => 
+                  (highestApprovedScores.get(prevGame.name) || 0) >= PASSING_SCORE
+                );
+                
+                // 4. Jika ada satu saja yang belum lulus, kunci level ini
+                if (!allPrevGamesPassed) {
+                  isLocked = true;
+                }
               }
             }
+            
             return (
-              <Card
-                key={game.id}
-                className={`transition-all hover:shadow-md transition-shadow ${isLocked ? 'border-gray-300 bg-gray-100' : 'border-2 border-green-600 bg-green-50/30'}`}
-              >
-                <CardContent className={`p-4 flex items-center justify-between hover: ${isLocked ? 'opacity-50' : ''}`}>
+              <Card key={game.id} className={`transition-all hover:shadow-md ${isLocked ? 'border-gray-300 bg-gray-100' : 'border-2 border-green-600 bg-green-50/30'}`}>
+                <CardContent className={`p-4 flex items-center justify-between ${isLocked ? 'opacity-50' : ''}`}>
                   <div className="space-y-1">
-                    <p className={`flex items-center font-semibold text-base ${isLocked ? 'text-gray-500' : 'text-green-800'}`}>
-                      {`Game ${game.name}`}
-                    </p>
-                    {`Level ${game.stage}`}
-                    <p>  </p>
-                    <p className="text-sm text-muted-foreground ml-7">
-                      Tenggat: {game.deadline.toDate().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
-                    </p>
-                  </div>
-                  <Button
-                    onClick={() => !isLocked && window.open(game.link, '_blank')}
-                    disabled={isLocked}
-                  >
-                    {isLocked ? (
-                      <><X className="w-4 h-4 mr-2" /> Terkunci</>
-                    ) : (
-                      <><PlayCircle className="w-4 h-4 mr-2" /> {`Mulai Level ${game.stage}`}</>
+                    <p className={`font-semibold text-base ${isLocked ? 'text-gray-500' : 'text-green-800'}`}>{game.name}</p>
+                    <p className="text-sm text-muted-foreground">Level {displayLevel}</p>
+                    {game.deadline && (
+                        <p className="text-sm text-muted-foreground">
+                        Tenggat: {game.deadline.toDate().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                        </p>
                     )}
+                  </div>
+                  <Button onClick={() => !isLocked && window.open(game.link, '_blank')} disabled={isLocked}>
+                    {isLocked ? ( <><X className="w-4 h-4 mr-2" /> Terkunci</> ) : ( <><PlayCircle className="w-4 h-4 mr-2" /> Mulai Level {displayLevel}</> )}
                   </Button>
                 </CardContent>
               </Card>
             );
           })}
         </div>
-      ) : (
-        <p className="text-center text-muted-foreground py-10">Belum ada game yang ditugaskan oleh guru.</p>
-      )}
+      ) : ( <p className="text-center text-muted-foreground py-10">Belum ada game yang ditugaskan.</p> )}
     </>
   );
 };
 
-interface SubmitScoreFormProps {
-  user: FirebaseUser | null;
-  setShowSubmitForm: (show: boolean) => void;
-  availableGames: ManagedGame[];
+
+// ... Sisa file (SubmitScoreForm, GamesSection) tidak perlu diubah ...
+// Saya sertakan kembali secara lengkap untuk memastikan tidak ada yang terlewat.
+
+interface SubmitScoreFormProps { 
+    user: FirebaseUser | null;
+    setShowSubmitForm: (show: boolean) => void;
+    availableGames: ManagedGame[];
 }
 
 const SubmitScoreForm = ({ user, setShowSubmitForm, availableGames }: SubmitScoreFormProps) => {
-  const [game, setGame] = useState("");
+  const [selectedGameId, setSelectedGameId] = useState(() => availableGames && availableGames.length > 0 ? availableGames[0].id : ""); 
   const [score, setScore] = useState("");
+  const [note, setNote] = useState("");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -167,16 +171,13 @@ const SubmitScoreForm = ({ user, setShowSubmitForm, availableGames }: SubmitScor
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    if (availableGames.length > 0 && !game) {
-      setGame(availableGames[0].name);
-    }
-  }, [availableGames, game]);
-
-  useEffect(() => {
-    return () => {
-      if (previewUrl) URL.revokeObjectURL(previewUrl);
-    };
-  }, [previewUrl]);
+      if (availableGames && availableGames.length > 0) {
+          const currentSelectionStillExists = availableGames.some(g => g.id === selectedGameId);
+          if (!selectedGameId || !currentSelectionStillExists) {
+              setSelectedGameId(availableGames[0].id);
+          }
+      }
+  }, [availableGames, selectedGameId]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -188,53 +189,52 @@ const SubmitScoreForm = ({ user, setShowSubmitForm, availableGames }: SubmitScor
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!score || !game || !file || !user) {
+    const selectedGame = availableGames.find(g => g.id === selectedGameId);
+    if (!score || !selectedGame || !file || !user) {
       setError("Game, Skor, dan Screenshot wajib diisi.");
       return;
     }
     setIsSubmitting(true);
     setError(null);
-
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("upload_preset", import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET as string);
       const res = await fetch(`https://api.cloudinary.com/v1_1/${import.meta.env.VITE_CLOUDINARY_CLOUD_NAME}/upload`, {
-        method: "POST",
-        body: formData,
+        method: "POST", body: formData,
       });
       if (!res.ok) throw new Error("Gagal mengunggah gambar.");
       const data = await res.json();
-
       await addDoc(collection(db, "gameSubmissions"), {
-        game,
+        game: selectedGame.name,
+        level: selectedGame.level,
         score: parseInt(score),
         maxScore: 10,
+        note,
         screenshotUrl: data.secure_url,
         userId: user.uid,
         studentName: user.displayName || user.email,
         status: "pending",
         createdAt: Timestamp.now()
       });
-
-      setSuccessMessage("Kiriman Anda berhasil disimpan dan sedang diproses oleh AI.");
-      setTimeout(() => setShowSubmitForm(false), 4000);
+      setSuccessMessage("Kiriman Anda berhasil disimpan.");
+      setTimeout(() => setShowSubmitForm(false), 3000);
     } catch (err: any) {
       setError(err.message || "Terjadi kesalahan.");
     } finally {
       setIsSubmitting(false);
     }
   };
-
+  
   if (successMessage) {
     return (
-      <Card className="border-green-500">
-        <CardHeader><CardTitle className="text-green-700 flex items-center"><CheckCircle className="w-5 h-5 mr-2" /> Berhasil!</CardTitle></CardHeader>
-        <CardContent>
-          <p className="text-sm italic">{successMessage}</p>
-          <Button variant="outline" onClick={() => setShowSubmitForm(false)} className="mt-4">Tutup</Button>
-        </CardContent>
-      </Card>
+        <Card className="border-green-500">
+            <CardHeader><CardTitle className="text-green-700 flex items-center"><CheckCircle className="w-5 h-5 mr-2" /> Berhasil!</CardTitle></CardHeader>
+            <CardContent>
+                <p className="text-sm italic">{successMessage}</p>
+                <Button variant="outline" onClick={() => setShowSubmitForm(false)} className="mt-4">Tutup</Button>
+            </CardContent>
+        </Card>
     );
   }
 
@@ -242,56 +242,65 @@ const SubmitScoreForm = ({ user, setShowSubmitForm, availableGames }: SubmitScor
     <Card className="border-primary">
       <form onSubmit={handleSubmit}>
         <CardHeader>
-          <CardTitle className="flex items-center text-lg font-medium mb-2">Submit Nilai Game</CardTitle>
+            <CardTitle className="flex items-center text-lg font-medium">Submit Nilai Game</CardTitle>
+            <CardDescription>Pilih game yang sudah Anda selesaikan dan upload buktinya.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="mb-2">
-              <Label htmlFor="game-select">Pilih Level</Label>
-              <select id="game-select" className="w-full p-2 border rounded-lg bg-input mt-2" value={game} onChange={(e) => setGame(e.target.value)}>
-                {availableGames.map((g) => (
-                  <option key={g.id} value={g.name}>{`Level ${g.stage}: ${g.name}`}</option>
-                ))}
-              </select>
-            </div>
-            <div className="mt-2">
-              <Label htmlFor="score-input">Skor Anda (1-10)</Label>
-              <Input id="score-input" placeholder="1-10" type="number" max="10" min="1" value={score} onChange={(e) => setScore(e.target.value)} required className="mt-1" />
-            </div>
-          </div>
-          <div>
-            <Label htmlFor="file-upload">Upload Screenshot Skor (Wajib)</Label>
-            <div className="mt-2">
-              {previewUrl ? (
-                <div className="relative border rounded-lg overflow-hidden aspect-video">
-                  <img src={previewUrl} alt="Preview screenshot" className="w-full h-full object-cover" />
-                  <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7"
-                    onClick={() => {
-                      setPreviewUrl(null);
-                      setFile(null);
-                      (document.getElementById('file-upload') as HTMLInputElement).value = "";
-                    }}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <Label htmlFor="game-select">Pilih Game/Level</Label>
+                    <select 
+                      id="game-select" 
+                      className="w-full p-2 border rounded-md bg-input mt-1" 
+                      value={selectedGameId} 
+                      onChange={(e) => setSelectedGameId(e.target.value)}
+                    >
+                        {availableGames.map((g) => (
+                            <option key={g.id} value={g.id}>{`Level ${g.level}: ${g.name}`}</option>
+                        ))}
+                    </select>
                 </div>
-              ) : (
-                <label htmlFor="file-upload" className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer block">
-                  <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Klik untuk upload</p>
-                </label>
-              )}
+                <div>
+                    <Label htmlFor="score-input">Skor Anda (1-10)</Label>
+                    <Input id="score-input" placeholder="Contoh: 8" type="number" max="10" min="1" value={score} onChange={(e) => setScore(e.target.value)} required className="mt-1" />
+                </div>
             </div>
-            <input id="file-upload" type="file" className="hidden" accept=".png,.jpg,.jpeg" onChange={handleFileChange} required />
-          </div>
-          {error && (<div className="text-sm text-destructive flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>)}
-          <div className="flex gap-3">
-            <Button type="submit" className="flex-1" disabled={isSubmitting}>
-              {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
-              {isSubmitting ? "Mensubmit..." : "Submit Nilai"}
-            </Button>
-            <Button variant="outline" type="button" onClick={() => setShowSubmitForm(false)} disabled={isSubmitting}>Batal</Button>
-          </div>
+            <div>
+                <Label htmlFor="note-input">Catatan Pengalaman (Opsional)</Label>
+                <Textarea id="note-input" placeholder="Ceritakan pengalamanmu saat bermain game ini..." value={note} onChange={(e) => setNote(e.target.value)} className="mt-1"/>
+            </div>
+            <div>
+                <Label htmlFor="file-upload">Upload Screenshot Skor (Wajib)</Label>
+                <div className="mt-1">
+                    {previewUrl ? (
+                        <div className="relative border rounded-lg overflow-hidden aspect-video">
+                            <img src={previewUrl} alt="Preview screenshot" className="w-full h-full object-cover" />
+                            <Button type="button" variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7"
+                                onClick={() => {
+                                    setPreviewUrl(null); setFile(null);
+                                    const fileInput = document.getElementById('file-upload') as HTMLInputElement;
+                                    if (fileInput) fileInput.value = "";
+                                }}>
+                                <X className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    ) : (
+                        <label htmlFor="file-upload" className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary transition-colors cursor-pointer block">
+                            <Upload className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-sm text-muted-foreground">Klik atau seret file ke sini</p>
+                        </label>
+                    )}
+                </div>
+                <input id="file-upload" type="file" className="hidden" accept="image/png, image/jpeg, image/jpg" onChange={handleFileChange} required />
+            </div>
+            {error && (<div className="text-sm text-destructive flex items-center gap-2"><AlertCircle className="w-4 h-4" /> {error}</div>)}
+            <div className="flex gap-3 pt-2">
+                <Button type="submit" className="flex-1" disabled={isSubmitting}>
+                    {isSubmitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    {isSubmitting ? "Mengirim..." : "Kirim Nilai"}
+                </Button>
+                <Button variant="outline" type="button" onClick={() => setShowSubmitForm(false)} disabled={isSubmitting}>Batal</Button>
+            </div>
         </CardContent>
       </form>
     </Card>
@@ -301,7 +310,8 @@ const SubmitScoreForm = ({ user, setShowSubmitForm, availableGames }: SubmitScor
 export function GamesSection({ userRole, user }: GamesSectionProps) {
   const [showSubmitForm, setShowSubmitForm] = useState(false);
   const [submissions, setSubmissions] = useState<ScoreEntry[]>([]);
-  const [isLoadingData, setIsLoadingData] = useState(true);
+  const [isLoadingSubmissions, setIsLoadingSubmissions] = useState(true);
+  const [isLoadingUsers, setIsLoadingUsers] = useState(true);
   const [reviewingSubmission, setReviewingSubmission] = useState<ScoreEntry | null>(null);
   const [teacherScore, setTeacherScore] = useState(0);
   const [teacherFeedback, setTeacherFeedback] = useState("");
@@ -312,61 +322,94 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
   const [isLoadingGames, setIsLoadingGames] = useState(true);
 
   useEffect(() => {
-    const gamesQuery = query(collection(db, "managedGames"), orderBy("stage", "asc"));
-    const unsubscribe = onSnapshot(gamesQuery, (snapshot) => {
+    const gamesQuery = query(collection(db, "managedGames"), orderBy("level", "asc"));
+    const unsubscribeGames = onSnapshot(gamesQuery, (snapshot) => {
       const gamesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ManagedGame));
       setManagedGames(gamesData);
       setIsLoadingGames(false);
     });
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    if (!user) return;
-    setIsLoadingData(true);
+    if (!user) {
+        setIsLoadingSubmissions(false);
+        setIsLoadingUsers(false);
+        return () => unsubscribeGames();
+    };
+    
+    setIsLoadingSubmissions(true);
     const submissionsCol = collection(db, "gameSubmissions");
     const q = userRole === 'teacher'
       ? query(submissionsCol, orderBy("createdAt", "desc"))
       : query(submissionsCol, where("userId", "==", user.uid), orderBy("createdAt", "desc"));
-
     const unsubscribeSubmissions = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ScoreEntry));
       setSubmissions(data);
-      setIsLoadingData(false);
+      setIsLoadingSubmissions(false);
     });
 
     let unsubscribeUsers = () => { };
     if (userRole === 'teacher') {
+      setIsLoadingUsers(true);
       const usersQuery = query(collection(db, "users"));
       unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
         const usersData = snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() })) as UserProfile[];
         setAllUsers(usersData);
+        setIsLoadingUsers(false);
       });
+    } else {
+        setIsLoadingUsers(false);
     }
-
+    
     return () => {
+      unsubscribeGames();
       unsubscribeSubmissions();
       unsubscribeUsers();
     };
   }, [user, userRole]);
 
-  const gameToStageMap = useMemo(() => new Map(managedGames.map(g => [g.name, g.stage])), [managedGames]);
+  const unlockedGamesForSubmission = useMemo(() => {
+    if (userRole !== 'student' || managedGames.length === 0) return managedGames;
+    const PASSING_SCORE = 7;
+    const highestApprovedScores = new Map<string, number>();
+    submissions
+        .filter(sub => sub.status === 'graded' || sub.status === 'approved')
+        .forEach(sub => {
+            const existingScore = highestApprovedScores.get(sub.game) || 0;
+            if (sub.score > existingScore) highestApprovedScores.set(sub.game, sub.score);
+        });
+    const result: ManagedGame[] = [];
+    for (const game of managedGames) {
+        if (game.level === 1) {
+            result.push(game);
+            continue;
+        }
+        const prevLevelGames = managedGames.filter(g => g.level === game.level - 1);
+        if (prevLevelGames.length > 0) {
+            const allPrevGamesPassed = prevLevelGames.every(prevGame => 
+                (highestApprovedScores.get(prevGame.name) || 0) >= PASSING_SCORE
+            );
+            if (allPrevGamesPassed) {
+                result.push(game);
+            } else {
+                break;
+            }
+        }
+    }
+    return result;
+  }, [managedGames, submissions, userRole]);
+
   const userInfoMap = useMemo(() => new Map(allUsers.map(u => [u.uid, { name: u.namaLengkap, email: u.email }])), [allUsers]);
 
   const getStatusBadge = (status: ScoreEntry['status']) => {
     switch (status) {
-      case 'pending': return <Badge className="text-orange-600 bg-orange-50"><AlertCircle className="w-3 h-3 mr-1" /> Menunggu AI</Badge>;
-      case 'approved': return <Badge className="text-blue-600 bg-blue-50"><Check className="w-3 h-3 mr-1" /> Disetujui Guru</Badge>;
-      case 'rejected': return <Badge className="text-red-600 bg-red-50"><X className="w-3 h-3 mr-1" /> Ditolak Guru</Badge>;
+      case 'pending': return <Badge className="text-orange-600 bg-orange-50"><AlertCircle className="w-3 h-3 mr-1" /> Menunggu</Badge>;
+      case 'approved': return <Badge className="text-blue-600 bg-blue-50"><Check className="w-3 h-3 mr-1" /> Disetujui</Badge>;
+      case 'rejected': return <Badge className="text-red-600 bg-red-50"><X className="w-3 h-3 mr-1" /> Ditolak</Badge>;
       case 'graded': return <Badge className="text-green-600 bg-green-50"><CheckCircle className="w-3 h-3 mr-1" /> Telah Dinilai</Badge>;
       default: return <Badge variant="outline">Unknown</Badge>;
     }
   };
 
-
-
   const openReviewModal = (submission: ScoreEntry) => {
-    setTeacherFeedback(submission.teacherNote || submission.feedback || "");
+    setTeacherFeedback(submission.teacherNote || "");
     setTeacherScore(submission.score);
     setApprovalError(null);
     setReviewingSubmission(submission);
@@ -384,19 +427,16 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
           score: teacherScore,
           note: reviewingSubmission.note || "Tidak ada catatan dari siswa.",
           game: reviewingSubmission.game,
+          level: reviewingSubmission.level,
           teacherNote: teacherFeedback
         })
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Gagal mendapatkan feedback dari AI.");
-
+      if (!res.ok) throw new Error(data.error || `Server merespons dengan status ${res.status}`);
       const docRef = doc(db, "gameSubmissions", reviewingSubmission.id);
       await updateDoc(docRef, {
-        status: "graded",
-        feedback: data.feedback,
-        teacherNote: teacherFeedback,
-        score: teacherScore,
-        rank: teacherScore >= 9 ? 'A+' : (teacherScore >= 7 ? 'A' : 'B+')
+        status: "graded", feedback: data.feedback, teacherNote: teacherFeedback,
+        score: teacherScore, rank: teacherScore >= 9 ? 'A+' : (teacherScore >= 7 ? 'A' : 'B+')
       });
       setReviewingSubmission(null);
     } catch (err: any) {
@@ -416,9 +456,7 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
     try {
       const docRef = doc(db, "gameSubmissions", reviewingSubmission.id);
       await updateDoc(docRef, {
-        status: "rejected",
-        feedback: teacherFeedback,
-        teacherNote: teacherFeedback
+        status: "rejected", feedback: teacherFeedback, teacherNote: teacherFeedback
       });
       setReviewingSubmission(null);
     } catch (err: any) {
@@ -428,6 +466,10 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
     }
   };
 
+  const isLoadingData = userRole === 'teacher' 
+    ? isLoadingSubmissions || isLoadingUsers 
+    : isLoadingSubmissions;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Tabs defaultValue="games" className="w-full">
@@ -435,18 +477,15 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
           <TabsTrigger value="games">{userRole === 'teacher' ? 'Kelola Games' : 'Main Game'}</TabsTrigger>
           <TabsTrigger value="submit">{userRole === 'teacher' ? 'Review Siswa' : 'Submit Nilai'}</TabsTrigger>
         </TabsList>
-
         <TabsContent value="games" className="mt-6">
           {userRole === 'teacher' ? <TeacherGamesView /> : <StudentGamesView user={user} games={managedGames} isLoadingGames={isLoadingGames} />}
         </TabsContent>
-
         <TabsContent value="submit" className="mt-6">
           {userRole === 'student' && showSubmitForm && (
             <div className="mb-6">
-              <SubmitScoreForm user={user} setShowSubmitForm={setShowSubmitForm} availableGames={managedGames} />
+              <SubmitScoreForm user={user} setShowSubmitForm={setShowSubmitForm} availableGames={unlockedGamesForSubmission} />
             </div>
           )}
-
           <div className="space-y-4">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">
@@ -467,68 +506,54 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
               </div>
             ) : (
               <div className="grid gap-4">
-                {/* --- KODE BARU DITEMPATKAN DI SINI --- */}
-                {submissions.map(sub => {
-                  const displayName = userInfoMap.get(sub.userId)?.name || sub.studentName || 'Siswa';
-                  return (
-                    <Card key={sub.id} className={`hover:shadow-md transition-shadow ${sub.status === 'pending' ? 'border-orange-200' : ''}`}>
-                      <CardHeader>
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <CardTitle className="flex items-center"><Trophy className="w-5 h-5 mr-2" /> {sub.game}</CardTitle>
-                            <CardDescription className="mt-2">
-                              {userRole === 'teacher' ? `Siswa: ${displayName}` : `Dimainkan pada ${sub.createdAt.toDate().toLocaleDateString('id-ID')}`}
-                            </CardDescription>
-                          </div>
-                          {getStatusBadge(sub.status)}
+                {submissions.map(sub => (
+                  <Card key={sub.id} className={`hover:shadow-md transition-shadow ${sub.status === 'pending' ? 'border-orange-200' : ''}`}>
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <CardTitle className="flex items-center"><Trophy className="w-5 h-5 mr-2" /> {sub.game}</CardTitle>
+                          <CardDescription className="mt-2">
+                            {userRole === 'teacher' ? `Siswa: ${userInfoMap.get(sub.userId)?.name || sub.studentName}` : `Dimainkan pada ${sub.createdAt.toDate().toLocaleDateString('id-ID')}`}
+                          </CardDescription>
                         </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="flex gap-2">
-                          {userRole === 'teacher' ? (
-                            <Button className="flex-1" onClick={() => openReviewModal(sub)} variant={sub.status === 'pending' ? 'default' : 'secondary'}>
-                              {sub.status === 'pending' && <><FileImage className="w-4 h-4 mr-2" /> Review Kiriman</>}
-                              {sub.status !== 'pending' && <><Edit className="w-4 h-4 mr-2" /> Lihat/Edit Feedback</>}
-                            </Button>
-                          ) : (
-                            <Button variant="outline" className="flex-1" onClick={() => openReviewModal(sub)}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              Lihat Detail Kiriman
-                            </Button>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                })}
+                        {getStatusBadge(sub.status)}
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      <Button variant="outline" className="w-full" onClick={() => openReviewModal(sub)}>
+                        <Eye className="w-4 h-4 mr-2" />
+                        {userRole === 'teacher' ? 'Review Kiriman' : 'Lihat Detail'}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                ))}
               </div>
             )}
           </div>
         </TabsContent>
       </Tabs>
-
       <Dialog open={!!reviewingSubmission} onOpenChange={(open) => !open && setReviewingSubmission(null)}>
         <DialogContent className="sm:max-w-3xl max-h-[90vh] grid grid-rows-[auto_1fr_auto] p-0">
           {reviewingSubmission && (
             <>
               <DialogHeader className="p-6 border-b">
-                <DialogTitle className="font-bold text-xl">Game {reviewingSubmission.game}</DialogTitle>
-                <DialogDescription className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2">
-                  <span className="mr-2 font-medium">
+                <DialogTitle className="font-bold text-xl">Review Kiriman: {reviewingSubmission.game}</DialogTitle>
+                <DialogDescription className="flex flex-wrap items-center gap-x-4 gap-y-2 pt-2 text-sm">
+                  <span className="font-medium text-base text-foreground">
                     {userInfoMap.get(reviewingSubmission.userId)?.name || reviewingSubmission.studentName}
                   </span>
-                  <span className="mr-2">
-                    {userInfoMap.get(reviewingSubmission.userId)?.email || 'N/A'}
+                  <span className="flex items-center text-muted-foreground">
+                    <Mail className="w-3 h-3 mr-1.5" />
+                    {userInfoMap.get(reviewingSubmission.userId)?.email || 'email tidak tersedia'}
                   </span>
-                  <span className="mr-2">
-                    Level: {gameToStageMap.get(reviewingSubmission.game) || 'N/A'}
+                  <span className="flex items-center text-muted-foreground">
+                    Level: {reviewingSubmission.level || 'N/A'}
                   </span>
-                  <span className="mr-2">
-                    Skor Diajukan: {reviewingSubmission.score}
+                  <span className="flex items-center text-muted-foreground">
+                    Skor Awal: {reviewingSubmission.score}
                   </span>
                   {getStatusBadge(reviewingSubmission.status)}
                 </DialogDescription>
-
               </DialogHeader>
               <div className="overflow-y-auto p-6 grid md:grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -536,8 +561,15 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                   <div className="border rounded-lg overflow-hidden aspect-video">
                     <ImageWithFallback src={reviewingSubmission.screenshotUrl} alt="Screenshot" className="w-full h-full object-contain" />
                   </div>
+                  {reviewingSubmission.note && (
+                    <div className="space-y-2">
+                      <Label className="flex items-center"><BookOpen className="w-4 h-4 mr-2 text-primary" /> Catatan dari Siswa</Label>
+                      <div className="p-3 bg-muted rounded-lg border max-h-[150px] overflow-y-auto">
+                        <p className="text-sm whitespace-pre-wrap">{reviewingSubmission.note}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
-
                 <div className="space-y-4">
                   <h4 className="font-medium">Verifikasi & Feedback Guru</h4>
                   <div className="space-y-2">
@@ -548,7 +580,7 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                     <Label><BookOpen className="w-4 h-4 text-primary mr-1" />Catatan Guru </Label>
                     <Textarea placeholder="Tuliskan catatan tambahan Anda..." className="min-h-[120px]" value={teacherFeedback} onChange={(e) => setTeacherFeedback(e.target.value)} disabled={userRole !== 'teacher'} />
                   </div>
-                  {reviewingSubmission.status === 'graded' && reviewingSubmission.feedback && (
+                  {reviewingSubmission.feedback && (
                     <div className="space-y-2">
                       <Label className="flex items-center"><Brain className="w-4 h-4 mr-2 text-primary" /> Feedback AI</Label>
                       <div className="p-3 bg-muted rounded-lg border max-h-[150px] overflow-y-auto">
@@ -558,7 +590,6 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                   )}
                 </div>
               </div>
-
               {userRole === 'teacher' && (
                 <DialogFooter className="p-6 border-t">
                   {approvalError && <p className="text-sm text-destructive text-left w-full mb-2">{approvalError}</p>}
@@ -567,7 +598,7 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
                   </Button>
                   <Button onClick={handleApproveWithAI} className="bg-green-600 hover:bg-green-700" disabled={isApproving}>
                     {isApproving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 mr-2" />}
-                    Setujui & Hasilkan Feedback AI
+                    Setujui & Hasilkan Feedback
                   </Button>
                 </DialogFooter>
               )}

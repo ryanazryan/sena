@@ -1,5 +1,3 @@
-// File: src/components/StudentDashboard.tsx
-
 import { useState, useEffect, useMemo, useRef } from "react";
 import { User as FirebaseUser } from "firebase/auth";
 import { UserProfile } from "../lib/auth";
@@ -54,7 +52,8 @@ interface StudentDashboardProps {
 type ManagedGame = {
   id: string;
   name: string;
-  stage: number;
+  level: number;
+  link: string;
   deadline?: Timestamp;
 };
 
@@ -88,7 +87,7 @@ export function StudentDashboard({
       setSubmissions(subsData);
     });
 
-    const gamesQuery = query(collection(db, "managedGames"), orderBy("stage", "asc"));
+    const gamesQuery = query(collection(db, "managedGames"), orderBy("level", "asc"));
     const unsubscribeGames = onSnapshot(gamesQuery, (snapshot) => {
       const gamesData = snapshot.docs.map(doc => ({
         id: doc.id,
@@ -109,7 +108,16 @@ export function StudentDashboard({
       .map(game => game.deadline!.toDate());
   }, [managedGames]);
 
+  const firstGameLink = useMemo(() => {
+    if (managedGames && managedGames.length > 0) {
+      return managedGames[0].link;
+    }
+    return null;
+  }, [managedGames]);
+
   const levelProgress = useMemo(() => {
+    const PASSING_SCORE = 7;
+
     const highestApprovedScores = new Map<string, number>();
     submissions
       .filter(sub => sub.status === 'graded' || sub.status === 'approved')
@@ -120,12 +128,39 @@ export function StudentDashboard({
         }
       });
 
-    return managedGames.map(game => ({
-      id: game.id,
-      name: `Level ${game.stage}: ${game.name}`,
-      score: highestApprovedScores.get(game.name) || 0,
-      maxScore: 10,
-    }));
+    const unlockedGames: any[] = [];
+
+    for (let i = 0; i < managedGames.length; i++) {
+      const game = managedGames[i];
+      let isUnlocked = false;
+
+      if (game.level === 1) {
+        isUnlocked = true;
+      } else {
+
+        const prevGameInList = managedGames.find(g => g.level === game.level - 1);
+        if (prevGameInList) {
+          const prevGameScore = highestApprovedScores.get(prevGameInList.name) || 0;
+          if (prevGameScore >= PASSING_SCORE) {
+            isUnlocked = true;
+          }
+        }
+      }
+
+      if (isUnlocked) {
+        unlockedGames.push({
+          id: game.id,
+          name: `Level ${game.level}: ${game.name}`,
+          score: highestApprovedScores.get(game.name) || 0,
+          maxScore: 10,
+          link: game.link,
+        });
+      } else {
+        break;
+      }
+    }
+
+    return unlockedGames;
   }, [submissions, managedGames]);
 
   const calculatedStats = useMemo(() => {
@@ -211,8 +246,6 @@ export function StudentDashboard({
             }}
           />
         </div>
-
-
         <div className="grid grid-cols-1 gap-6">
           <Carousel
             plugins={[plugin.current]}
@@ -240,12 +273,20 @@ export function StudentDashboard({
                       <CardContent className="flex flex-col items-center justify-center p-4 pt-2 mt-6">
                         <PlayCircle className="w-10 h-10 md:w-12 md:h-12 text-white mb-3" />
                         <Button
-                          onClick={() => onSectionChange("games")}
-                          className="w-full"
+                          onClick={() => {
+                            if (firstGameLink) {
+                              window.open(firstGameLink, '_blank');
+                            } else {
+                              onSectionChange("games");
+                            }
+                          }}
+                          disabled={!firstGameLink}
+                          className="w-full mt-2"
                           variant="secondary"
                           size="sm"
                         >
-                          Mulai Petualangan
+                          <PlayCircle className="w-4 h-4 mr-2" />
+                          {firstGameLink ? "Mulai Petualangan" : "Game Belum Tersedia"}
                         </Button>
                       </CardContent>
                     </Card>
@@ -255,7 +296,6 @@ export function StudentDashboard({
             </CarouselContent>
           </Carousel>
 
-          {/* --- KARTU BUKU PANDUAN --- */}
           <Card className="flex flex-col h-full">
             <CardHeader>
               <CardTitle>Buku Panduan</CardTitle>

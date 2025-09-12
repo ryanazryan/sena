@@ -26,7 +26,7 @@ export function Footer({ onSectionChange, userRole }: FooterProps) {
   const navigationLinks = [
     { id: 'home', label: 'Dashboard', icon: Home },
     { id: 'games', label: 'Games', icon: Gamepad2 },
-    { id: 'aboutus', label: 'Tentang Kami', icon: BookOpen },
+    // { id: 'aboutus', label: 'Tentang Kami', icon: BookOpen },
   ];
 
   const contactInfo = [
