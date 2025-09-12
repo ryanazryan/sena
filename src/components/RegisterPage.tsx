@@ -60,24 +60,26 @@ export function RegisterPage({ onBack, onShowLogin, onRegisterSuccess }: Registe
       });
     } else if (user) {
       toast.success("Registrasi Berhasil!", {
-        description: "Silakan masuk untuk melanjutkan."
+        description: "Anda akan diarahkan ke dasbor."
       });
-      // Memanggil onRegisterSuccess yang akan ditangani oleh App.tsx
       onRegisterSuccess(user);
     }
   };
   
   const handleGoogleSignIn = async () => {
     setIsLoading(true);
-    const { user, error } = await signInWithGoogle();
+    // --- PASTIKAN BARIS INI SUDAH BENAR ---
+    // Ia harus mengirimkan 'selectedRole' ke dalam fungsi.
+    const { user, error } = await signInWithGoogle(selectedRole); 
     setIsLoading(false);
 
     if (user) {
-      toast.success("Login dengan Google Berhasil!");
-      onShowLogin();
+      toast.success("Registrasi dengan Google Berhasil!");
+      // Panggil onRegisterSuccess agar langsung masuk dasbor
+      onRegisterSuccess(user); 
     } else {
-      toast.error("Login Gagal", {
-        description: error || "Gagal login dengan Google."
+      toast.error("Gagal mendaftar dengan Google", {
+        description: error || "Terjadi kesalahan yang tidak diketahui.",
       });
     }
   };
@@ -185,4 +187,3 @@ export function RegisterPage({ onBack, onShowLogin, onRegisterSuccess }: Registe
     </div>
   );
 }
-

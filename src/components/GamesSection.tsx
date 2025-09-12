@@ -254,7 +254,7 @@ const SubmitScoreForm = ({ user, setShowSubmitForm, availableGames }: SubmitScor
                 ))}
               </select>
             </div>
-            <div>
+            <div className="mt-2">
               <Label htmlFor="score-input">Skor Anda (1-10)</Label>
               <Input id="score-input" placeholder="1-10" type="number" max="10" min="1" value={score} onChange={(e) => setScore(e.target.value)} required className="mt-1" />
             </div>

@@ -9,6 +9,7 @@ import { Badge } from "./ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "./ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "./ui/alert-dialog";
 import { Plus, Loader2, Check, ExternalLink, Pencil, Trash2 } from "lucide-react";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "./ui/select";
 
 type ManagedGame = {
   id: string;
@@ -21,7 +22,7 @@ type ManagedGame = {
 export const TeacherGamesView = () => {
   const [games, setGames] = useState<ManagedGame[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   const [gameName, setGameName] = useState("");
   const [gameLink, setGameLink] = useState("");
   const [deadline, setDeadline] = useState("");
@@ -132,22 +133,38 @@ export const TeacherGamesView = () => {
             </div>
             <div className="space-y-2">
               <Label htmlFor="gameLink">Link Game</Label>
-              <Input id="gameLink" type="url" value={gameLink} onChange={e => setGameLink(e.target.value)} placeholder="https://contohgame.com/main"/>
+              <Input id="gameLink" type="url" value={gameLink} onChange={e => setGameLink(e.target.value)} placeholder="https://contohgame.com/main" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-2 gap-4">
+
+              {/* Kolom 1: Deadline */}
               <div className="space-y-2">
                 <Label htmlFor="deadline">Deadline</Label>
-                <Input id="deadline" type="date" value={deadline} onChange={e => setDeadline(e.target.value)} />
+                <Input
+                  id="deadline"
+                  type="date"
+                  value={deadline}
+                  onChange={e => setDeadline(e.target.value)}
+                  className="text-center"
+                />
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="stage">Pilih Stage</Label>
-                <select id="stage" value={stage} onChange={e => setStage(e.target.value)} className="w-full h-10 p-2 border rounded-lg bg-input mt-1">
-                  <option value="1">Stage 1</option>
-                  <option value="2">Stage 2</option>
-                  <option value="3">Stage 3</option>
-                </select>
+                <Select value={stage} onValueChange={setStage}>
+                  <SelectTrigger id="stage" className="w-full">
+                    <SelectValue placeholder="Pilih Stage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Stage 1">Stage 1</SelectItem>
+                    <SelectItem value="Stage 2">Stage 2</SelectItem>
+                    <SelectItem value="Stage 3">Stage 3</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+
             </div>
+
             {error && <p className="text-sm text-destructive">{error}</p>}
             {success && <p className="text-sm text-green-600">{success}</p>}
             <Button type="submit" disabled={isSubmitting}>
@@ -157,33 +174,33 @@ export const TeacherGamesView = () => {
           </form>
         </CardContent>
       </Card>
-      
+
       <Card>
         <CardHeader><CardTitle>Daftar Game yang Dikelola</CardTitle></CardHeader>
         <CardContent>
-          {isLoading ? <div className="flex justify-center"><Loader2 className="animate-spin"/></div>
-          : games.length > 0 ? (
-            <div className="space-y-2">
-              {games.map(game => (
-                <div key={game.id} className="flex items-center justify-between p-3 border rounded-lg gap-2">
-                  <div className="flex items-center gap-4">
-                    <Badge variant="secondary">Stage {game.stage}</Badge>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold truncate">{game.name}</p>
-                      <a href={game.link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 truncate">
-                        <ExternalLink className="w-3 h-3" /> {game.link}
-                      </a>
+          {isLoading ? <div className="flex justify-center"><Loader2 className="animate-spin" /></div>
+            : games.length > 0 ? (
+              <div className="space-y-2">
+                {games.map(game => (
+                  <div key={game.id} className="flex items-center justify-between p-3 border rounded-lg gap-2">
+                    <div className="flex items-center gap-4">
+                      <Badge variant="secondary">Stage {game.stage}</Badge>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold truncate">{game.name}</p>
+                        <a href={game.link} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1 truncate">
+                          <ExternalLink className="w-3 h-3" /> {game.link}
+                        </a>
+                      </div>
+                    </div>
+                    <div className="flex items-center flex-shrink-0 gap-2">
+                      <Badge variant="outline">Deadline: {game.deadline.toDate().toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</Badge>
+                      <Button variant="outline" size="icon" onClick={() => setEditingGame(game)}><Pencil className="w-4 h-4" /></Button>
+                      <Button variant="destructive" size="icon" onClick={() => setGameToDelete(game)}><Trash2 className="w-4 h-4" /></Button>
                     </div>
                   </div>
-                  <div className="flex items-center flex-shrink-0 gap-2">
-                    <Badge variant="outline">Deadline: {game.deadline.toDate().toLocaleDateString('id-ID', {day: 'numeric', month: 'short'})}</Badge>
-                    <Button variant="outline" size="icon" onClick={() => setEditingGame(game)}><Pencil className="w-4 h-4" /></Button>
-                    <Button variant="destructive" size="icon" onClick={() => setGameToDelete(game)}><Trash2 className="w-4 h-4" /></Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : <p className="text-sm text-muted-foreground text-center">Belum ada game yang ditambahkan.</p>}
+                ))}
+              </div>
+            ) : <p className="text-sm text-muted-foreground text-center">Belum ada game yang ditambahkan.</p>}
         </CardContent>
       </Card>
 
@@ -203,18 +220,18 @@ export const TeacherGamesView = () => {
               <Input id="editGameLink" type="url" value={editLink} onChange={e => setEditLink(e.target.value)} />
             </div>
             <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <Label htmlFor="editDeadline">Deadline</Label>
-                    <Input id="editDeadline" type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)} />
-                </div>
-                <div className="space-y-2">
-                    <Label htmlFor="editStage">Pilih Stage</Label>
-                    <select id="editStage" value={editStage} onChange={e => setEditStage(e.target.value)} className="w-full h-10 p-2 border rounded-lg bg-input mt-1">
-                        <option value="1">Stage 1</option>
-                        <option value="2">Stage 2</option>
-                        <option value="3">Stage 3</option>
-                    </select>
-                </div>
+              <div className="space-y-2">
+                <Label htmlFor="editDeadline">Deadline</Label>
+                <Input id="editDeadline" type="date" value={editDeadline} onChange={e => setEditDeadline(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="editStage">Pilih Stage</Label>
+                <select id="editStage" value={editStage} onChange={e => setEditStage(e.target.value)} className="w-full h-10 p-2 border rounded-lg bg-input mt-1">
+                  <option value="1">Stage 1</option>
+                  <option value="2">Stage 2</option>
+                  <option value="3">Stage 3</option>
+                </select>
+              </div>
             </div>
             <DialogFooter>
               <DialogClose asChild><Button type="button" variant="secondary">Batal</Button></DialogClose>
@@ -226,7 +243,7 @@ export const TeacherGamesView = () => {
           </form>
         </DialogContent>
       </Dialog>
-      
+
       <AlertDialog open={!!gameToDelete} onOpenChange={(open) => !open && setGameToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -237,7 +254,7 @@ export const TeacherGamesView = () => {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Batal</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">
               Ya, Hapus
             </AlertDialogAction>
           </AlertDialogFooter>

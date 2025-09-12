@@ -62,23 +62,9 @@ export default function App() {
       if (currentUser) {
         await currentUser.reload();
         setUser(currentUser);
-
-        // --- FITUR VERIFIKASI EMAIL DINONAKTIFKAN ---
-        // Pengecekan `currentUser.emailVerified` dihapus agar pengguna bisa langsung masuk
-        // setelah mendaftar tanpa perlu verifikasi.
-        // Untuk mengaktifkan kembali, kembalikan blok if-else di bawah ini.
-        /*
-        if (currentUser.emailVerified) {
-          const firestoreProfile = await getUserProfile(currentUser.uid);
-          setUserProfile(firestoreProfile);
-        } else {
-          setUserProfile(null);
-        }
-        */
+        
         const firestoreProfile = await getUserProfile(currentUser.uid);
         setUserProfile(firestoreProfile);
-        // --- AKHIR PERUBAHAN ---
-
       } else {
         setUser(null);
         setUserProfile(null);
@@ -94,10 +80,10 @@ export default function App() {
     setAuthScreen('login');
   };
 
+  // --- FUNGSI INI TELAH DIPERBAIKI (LEBIH AMAN) ---
   const renderContent = () => {
-    const userRole = userProfile?.peran;
-
-    if (!userProfile || !user) {
+    // Garda keamanan: Tampilkan loading jika user atau profilnya belum siap
+    if (!user || !userProfile) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-background">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
@@ -105,6 +91,7 @@ export default function App() {
       );
     }
 
+    // Cek jika siswa belum melengkapi profil (memilih kelas)
     if (userProfile.peran === 'student' && (!userProfile.kelasIds || userProfile.kelasIds.length === 0)) {
       return (
         <CompleteProfilePage
@@ -113,6 +100,8 @@ export default function App() {
         />
       );
     }
+    
+    const userRole = userProfile.peran;
 
     switch (activeSection) {
       case "profile":
@@ -162,33 +151,15 @@ export default function App() {
       </div>
     );
   }
-
-  // --- FITUR VERIFIKASI EMAIL DINONAKTIFKAN ---
-  // Halaman verifikasi email tidak akan ditampilkan.
-  // Untuk mengaktifkan kembali, hapus komentar pada blok if di bawah ini.
-  /*
-  if (user && !user.emailVerified) {
-    return (
-      <VerifyEmailPage 
-        user={user} 
-        onBackToLogin={async () => {
-          await handleLogout();
-          setAuthScreen('login');
-        }} 
-      />
-    );
-  }
-  */
-  // --- AKHIR PERUBAHAN ---
-
+  
   if (!user) {
     switch (authScreen) {
       case 'register':
         return <RegisterPage
-  onShowLogin={() => setAuthScreen('login')}
-  onRegisterSuccess={refreshUserProfile}
-  onBack={() => setAuthScreen('login')}
-/>;
+          onShowLogin={() => setAuthScreen('login')}
+          onRegisterSuccess={refreshUserProfile}
+          onBack={() => setAuthScreen('login')}
+        />;
       case 'forgotPassword':
         return <ForgotPasswordPage onShowLogin={() => setAuthScreen('login')} />;
       case 'login':
@@ -216,4 +187,3 @@ export default function App() {
     </div>
   );
 }
-

@@ -64,7 +64,6 @@ export const StudentGamesView = ({ user }: StudentGamesViewProps) => {
     return () => unsubscribe();
   }, [user]);
 
-  // Logika untuk menentukan skor tertinggi di Stage 1
   const highestStage1Score = useMemo(() => {
     if (games.length === 0) return 0;
     const stage1GameName = games[0].name;
