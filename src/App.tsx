@@ -6,7 +6,7 @@ import { getUserProfile, UserProfile, logoutUser } from "./lib/auth";
 
 import { LoginPage } from "./components/LoginPage";
 import { RegisterPage } from "./components/RegisterPage";
-import { VerifyEmailPage } from "./components/VerifyEmailPage";
+// import { VerifyEmailPage } from "./components/VerifyEmailPage";
 import { ForgotPasswordPage } from "./components/ForgotPasswordPage";
 import { Navigation } from "./components/Navigation";
 import { GamesSection } from "./components/GamesSection";
@@ -18,7 +18,7 @@ import CompleteProfilePage from "./components/CompleteProfilePage";
 
 import { StudentDashboard } from "./components/StudentDashboard";
 import { TeacherDashboard } from "./components/TeacherDashboard";
-import { AboutSection } from "./components/AboutSection";
+// import { AboutSection } from "./components/AboutSection";
 
 // --- PERUBAIKAN DI SINI ---
 // Menambahkan properti 'level' pada type ScoreEntry
@@ -126,8 +126,6 @@ export default function App() {
         />;
       case "games":
         return <GamesSection userRole={userRole} user={user} />;
-      case "aboutus":
-        return <AboutSection />;
 
       default:
         if (userRole === 'teacher') {
