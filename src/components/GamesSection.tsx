@@ -164,7 +164,7 @@ interface SubmitScoreFormProps {
 
 // --- PERBAIKAN TYPO DI SINI ---
 const SubmitScoreForm = ({ user, setShowSubmitForm, availableGames }: SubmitScoreFormProps) => {
-// --- AKHIR PERBAIKAN ---
+  // --- AKHIR PERBAIKAN ---
   const [selectedGameId, setSelectedGameId] = useState(() => availableGames && availableGames.length > 0 ? availableGames[0].id : "");
   const [score, setScore] = useState("");
   const [note, setNote] = useState("");
@@ -428,7 +428,9 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
     setIsApproving(true);
     setApprovalError(null);
     try {
-      const res = await fetch('http://localhost:3001/feedback', {
+      const backendUrl = 'https://tvp6l8-2222.csb.app/feedback';
+
+      const res = await fetch(backendUrl, { 
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -13,7 +13,7 @@ import {
   ExternalLink,
   Home
 } from "lucide-react";
-import senaLogo from '../assets/logo.png';
+import senaLogo from '../assets/logo.png'
 
 interface FooterProps {
   onSectionChange?: (section: string) => void;
@@ -93,7 +93,7 @@ export function Footer({ onSectionChange, userRole }: FooterProps) {
               </div>
               <p className="text-sm text-muted-foreground leading-relaxed mb-4">
                 Platform pembelajaran mandiri yang menghadirkan petualangan baru dalam dunia pendidikan 
-                dengan teknologi AI, library digital terlengkap, dan sistem evaluasi terintegrasi.
+                dengan teknologi AI, dan sistem evaluasi terintegrasi.
               </p>
               <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                 <MapPin className="w-3 h-3" />

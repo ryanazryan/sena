@@ -140,7 +140,6 @@ export function StudentDashboard({
       } else {
         const prevLevelGames = managedGames.filter(g => g.level === game.level - 1);
         if (prevLevelGames.length > 0) {
-          // Cek kelulusan menggunakan kunci unik yang baru
           const allPrevGamesPassed = prevLevelGames.every(prevGame => {
             const uniqueKey = `${prevGame.name}-L${prevGame.level}`;
             return (highestApprovedScores.get(uniqueKey) || 0) >= PASSING_SCORE;
@@ -171,7 +170,7 @@ export function StudentDashboard({
   const calculatedStats = useMemo(() => {
     const approvedSubmissions = submissions.filter(s => s.status === 'graded' || s.status === 'approved');
     const count = new Set(approvedSubmissions.map(s => `${s.game}-L${s.level}`)).size;
-    
+
     if (count === 0) {
       return {
         highestScore: 0,
@@ -179,17 +178,17 @@ export function StudentDashboard({
         level: "Pemula",
       };
     }
-    
+
     const maxScore = Math.max(...approvedSubmissions.map((sub) => sub.score), 0);
-    
+
     const highestLevelCompleted = Math.max(0, ...approvedSubmissions.map(s => s.level));
 
     let levelText = "Pemula";
     if (highestLevelCompleted >= 2) {
-        levelText = "Menengah";
+      levelText = "Menengah";
     }
     if (highestLevelCompleted >= 3) {
-        levelText = "Mahir";
+      levelText = "Mahir";
     }
 
     return {
@@ -276,36 +275,38 @@ export function StudentDashboard({
               {carouselImages.map((imgSrc, index) => (
                 <CarouselItem key={index}>
                   <div
-                    className="relative rounded-lg overflow-hidden flex items-center justify-center h-full p-1 min-h-[160px] md:min-h-[180px]"
+                    className="relative rounded-lg overflow-hidden flex items-center justify-center h-full p-1 min-h-[160px] md:min-h-[180px] cursor-pointer" // Tambahkan cursor-pointer
                     style={{
                       backgroundImage: `url(${imgSrc})`,
                       backgroundSize: "cover",
                       backgroundPosition: "center",
                     }}
+                    onClick={() => {
+                      if (firstGameLink) {
+                        window.open(firstGameLink, '_blank');
+                      } else {
+                        console.log("Game belum tersedia");
+                      }
+                    }}
                   >
-                    <div className="absolute inset-0 bg-black/40" />
+                    <div className="absolute inset-0" />
                     <Card className="w-full bg-transparent border-none text-white text-center">
                       <CardHeader className="p-4 pb-2">
                         <CardTitle className="text-lg md:text-xl"></CardTitle>
                       </CardHeader>
                       <CardContent className="flex flex-col items-center justify-center p-4 pt-2 mt-6">
-                        <PlayCircle className="w-10 h-10 md:w-12 md:h-12 text-white mb-3" />
+
+                        {/* Ikon Play besar di tengah */}
+                        <PlayCircle className="w-12 h-12 text-white opacity-80" />
+
+                        {/* Tombol Kuning sebagai pengganti <p> */}
                         <Button
-                          onClick={() => {
-                            if (firstGameLink) {
-                              window.open(firstGameLink, '_blank');
-                            } else {
-                              onSectionChange("games");
-                            }
-                          }}
-                          disabled={!firstGameLink}
-                          className="w-full mt-2"
-                          variant="secondary"
+                          className="mt-4 bg-[--warning] text-[--warning-foreground] hover:bg-[--warning]/90 focus-visible:ring-[--warning] pointer-events-none"
                           size="sm"
                         >
-                          <PlayCircle className="w-4 h-4 mr-2" />
                           {firstGameLink ? "Mulai Petualangan" : "Game Belum Tersedia"}
                         </Button>
+
                       </CardContent>
                     </Card>
                   </div>
