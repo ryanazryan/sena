@@ -13,7 +13,7 @@ import {
   deleteUser,
 } from "firebase/auth";
 import { setDoc, doc, getDoc, updateDoc, deleteDoc, serverTimestamp } from "firebase/firestore";
-import { User as FirebaseUser } from "firebase/auth"; // Impor tipe User jika belum ada
+import { User as FirebaseUser } from "firebase/auth"; 
 
 export interface UserProfile {
   uid: string;
@@ -24,7 +24,6 @@ export interface UserProfile {
   createdAt?: any;
 }
 
-// Pindahkan provider ke luar fungsi agar tidak dibuat berulang kali
 const googleProvider = new GoogleAuthProvider();
 
 export const registerUser = async (

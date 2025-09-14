@@ -428,9 +428,8 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
     setIsApproving(true);
     setApprovalError(null);
     try {
-      const backendUrl = 'https://tvp6l8-2222.csb.app/feedback';
-
-      const res = await fetch(backendUrl, { 
+      const backendUrl = `${import.meta.env.VITE_BACKEND_URL}/feedback`;
+      const res = await fetch(backendUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -450,7 +449,7 @@ export function GamesSection({ userRole, user }: GamesSectionProps) {
       });
       setReviewingSubmission(null);
     } catch (err: any) {
-      setApprovalError(err.message || "Pastikan server AI (localhost:3001) berjalan.");
+      setApprovalError(err.message || "Pastikan server AI berjalan.");
     } finally {
       setIsApproving(false);
     }
