@@ -1,6 +1,6 @@
 # 📘 SENA – Literacy Learning Platform
 
-**Website**:   website: https://senaeducation.com/
+**Website**: https://senaeducation.com/
 
 ## 📝 Description
 
